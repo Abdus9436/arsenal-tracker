@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arsenal Tracker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+    <h1>⚽ Arsenal Tracker</h1>
+    <p>Predict the scores. Earn the points.</p>
+</header>
+
+<main>
+    <section id="fixtures-section">
+        <h2>Fixtures</h2>
+        <div id="fixtures-list">
+            Loading fixtures...
+        </div>
+    </section>
+
+    <section id="prediction-section">
+        <h2>Submit a Prediction</h2>
+        <div id="prediction-form">
+            <select id="fixture-select">
+                <option value="">Select a fixture...</option>
+            </select>
+            <input type="number" id="pred-home" placeholder="Arsenal score" min="0">
+            <input type="number" id="pred-away" placeholder="Opponent score" min="0">
+            <button id="submit-prediction">Submit Prediction</button>
+            <p id="prediction-message"></p>
+        </div>
+    </section>
+
+    <section id="predictions-section">
+        <h2>My Predictions</h2>
+        <div id="predictions-list">
+            Loading predictions...
+        </div>
+    </section>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

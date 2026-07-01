@@ -1,0 +1,127 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #1c1c1e;
+    color: #ffffff;
+    min-height: 100vh;
+}
+
+header {
+    background-color: #9b0005;
+    padding: 20px 40px;
+    border-bottom: 4px solid #ffffff;
+}
+
+header h1 {
+    font-size: 2rem;
+    color: #ffffff;
+}
+
+header p {
+    color: #ffcccc;
+    margin-top: 4px;
+}
+
+main {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+}
+
+section h2 {
+    font-size: 1.4rem;
+    color: #db0007;
+    border-bottom: 2px solid #db0007;
+    padding-bottom: 8px;
+    margin-bottom: 16px;
+}
+
+.fixture-card {
+    background-color: #1a1a1a;
+    border-left: 4px solid #db0007;
+    padding: 14px 18px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.fixture-card strong {
+    font-size: 1.1rem;
+    color: #ffffff;
+}
+
+.fixture-card span {
+    font-size: 0.9rem;
+    color: #aaaaaa;
+}
+
+.prediction-card {
+    background-color: #1a1a1a;
+    border-left: 4px solid #ffffff;
+    padding: 14px 18px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.prediction-card strong {
+    font-size: 1.1rem;
+    color: #ffffff;
+}
+
+.prediction-card span {
+    font-size: 0.9rem;
+    color: #aaaaaa;
+}
+
+#prediction-form {
+    background-color: #1a1a1a;
+    padding: 20px;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+#fixture-select,
+#pred-home,
+#pred-away {
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #444444;
+    background-color: #2a2a2a;
+    color: #ffffff;
+    font-size: 1rem;
+}
+
+#submit-prediction {
+    padding: 10px 20px;
+    background-color: #db0007;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    width: fit-content;
+}
+
+#submit-prediction:hover {
+    background-color: #b30006;
+}
+
+#prediction-message {
+    color: #aaaaaa;
+    font-size: 0.9rem;
+}
