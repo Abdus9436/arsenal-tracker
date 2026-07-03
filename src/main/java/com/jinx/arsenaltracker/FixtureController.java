@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("/api/fixtures")
@@ -38,6 +39,19 @@ public class FixtureController {
         scoringService.scoreFixture(saved);
 
         return saved;
+    }
+
+    @PutMapping("/{id}")
+    public Fixture updateFixture(@PathVariable Long id, @RequestBody Fixture updates) {
+        Fixture fixture = fixtureRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Fixture not found"));
+
+        if (updates.getMatchTime() != null) fixture.setMatchTime(updates.getMatchTime());
+        if (updates.getMatchDate() != null) fixture.setMatchDate(updates.getMatchDate());
+        if (updates.getOpponent() != null) fixture.setOpponent(updates.getOpponent());
+        if (updates.getVenue() != null) fixture.setVenue(updates.getVenue());
+
+        return fixtureRepository.save(fixture);
     }
 
 }

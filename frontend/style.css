@@ -27,15 +27,6 @@ header p {
     margin-top: 4px;
 }
 
-main {
-    max-width: 800px;
-    margin: 40px auto;
-    padding: 0 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 40px;
-}
-
 section h2 {
     font-size: 1.4rem;
     color: #db0007;
@@ -124,4 +115,106 @@ section h2 {
 #prediction-message {
     color: #aaaaaa;
     font-size: 0.9rem;
+}
+
+.standings-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.standings-table th,
+.standings-table td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid #2a2a2a;
+}
+
+.standings-table th {
+    color: #db0007;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.standings-table tr:hover {
+    background-color: #2a2a2a;
+}
+
+#login-section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 100px);
+}
+
+#login-form {
+    background-color: #1a1a1a;
+    padding: 40px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    max-width: 400px;
+}
+
+#login-form h2 {
+    color: #db0007;
+    font-size: 1.4rem;
+    border-bottom: 2px solid #db0007;
+    padding-bottom: 8px;
+}
+
+#login-email,
+#login-password {
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #444444;
+    background-color: #2a2a2a;
+    color: #ffffff;
+    font-size: 1rem;
+}
+
+#login-button {
+    padding: 10px 20px;
+    background-color: #9b0005;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+#login-button:hover {
+    background-color: #b30006;
+}
+
+#login-message {
+    color: #ff6666;
+    font-size: 0.9rem;
+}
+
+#logout-button {
+    padding: 8px 16px;
+    background-color: transparent;
+    color: #aaaaaa;
+    border: 1px solid #444444;
+    border-radius: 4px;
+    cursor: pointer;
+    width: fit-content;
+    margin: 0 auto;
+}
+
+#logout-button:hover {
+    color: #ffffff;
+    border-color: #ffffff;
+}
+
+#main-content {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
 }

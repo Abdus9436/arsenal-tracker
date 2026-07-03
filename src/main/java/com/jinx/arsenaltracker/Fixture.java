@@ -20,6 +20,7 @@ public class Fixture {
     private Integer actualHomeScore;
     private Integer actualAwayScore;
     private String source;
+    private java.time.LocalTime matchTime;
 
 
     public Fixture() {
@@ -79,5 +80,13 @@ public class Fixture {
 
     public void setSource(String source) {
         this.source = source;
+    }
+
+    public java.time.LocalTime getMatchTime() {
+        return matchTime;
+    }
+
+    public void setMatchTime(java.time.LocalTime matchTime) {
+        this.matchTime = matchTime;
     }
 }

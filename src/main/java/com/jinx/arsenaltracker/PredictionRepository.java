@@ -8,6 +8,8 @@ import java.util.List;
 public interface PredictionRepository extends JpaRepository<Prediction, Long> {
     List<Prediction> findByFixture(Fixture fixture);
 
-    @Query("SELECT p.user.email, SUM(p.pointsEarned) FROM Prediction p WHERE p.pointsEarned IS NOT NULL GROUP BY p.user.email ORDER BY SUM(p.pointsEarned) DESC")
+    boolean existsByUserIdAndFixtureId(Long userId, Long fixtureId);
+
+    @Query("SELECT COALESCE(p.user.displayName, p.user.email), SUM(p.pointsEarned) FROM Prediction p WHERE p.pointsEarned IS NOT NULL GROUP BY p.user.email ORDER BY SUM(p.pointsEarned) DESC")
     List<Object[]> getLeaderboard();
 }

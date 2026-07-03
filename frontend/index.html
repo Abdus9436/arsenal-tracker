@@ -13,12 +13,21 @@
     <p>Predict the scores. Earn the points.</p>
 </header>
 
-<main>
+<div id="login-section">
+    <div id="login-form">
+        <h2>Login</h2>
+        <input type="email" id="login-email" placeholder="Email">
+        <input type="password" id="login-password" placeholder="Password">
+        <button id="login-button">Login</button>
+        <p id="login-message"></p>
+    </div>
+</div>
+
+<main id="main-content" style="display: none;">
+
     <section id="fixtures-section">
         <h2>Fixtures</h2>
-        <div id="fixtures-list">
-            Loading fixtures...
-        </div>
+        <div id="fixtures-list">Loading fixtures...</div>
     </section>
 
     <section id="prediction-section">
@@ -36,10 +45,16 @@
 
     <section id="predictions-section">
         <h2>My Predictions</h2>
-        <div id="predictions-list">
-            Loading predictions...
-        </div>
+        <div id="predictions-list">Loading predictions...</div>
     </section>
+
+    <section id="standings-section">
+        <h2>Live Standings</h2>
+        <div id="standings-list">Loading standings...</div>
+    </section>
+
+    <button id="logout-button">Logout</button>
+
 </main>
 
 <script src="app.js"></script>

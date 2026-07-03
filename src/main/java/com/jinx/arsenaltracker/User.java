@@ -14,6 +14,7 @@ public class User {
 
     private String email;
     private String passwordHash;
+    private String displayName;
 
     public User() {
     }
@@ -40,5 +41,13 @@ public class User {
 
     public void setPasswordHash(String passwordHash) {
         this.passwordHash = passwordHash;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
     }
 }

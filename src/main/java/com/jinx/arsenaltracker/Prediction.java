@@ -3,6 +3,9 @@ package com.jinx.arsenaltracker;
 import jakarta.persistence.*;
 
 @Entity
+@Table(uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"user_id", "fixture_id"})
+})
 public class Prediction {
 
     @Id
