@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom'
 
 const API_BASE = '/api'
 
@@ -64,71 +65,53 @@ function LoginPage({ onLoginSuccess }) {
     )
 }
 
-function FixturesSection({ fixtures }) {
+function NavBar({ onLogout }) {
+    const navLinkStyle = ({ isActive }) => ({
+        ...styles.navLink,
+        color: isActive ? '#ffffff' : '#aaaaaa',
+        borderBottom: isActive ? '2px solid #db0007' : '2px solid transparent',
+    })
+
     return (
-        <section>
-            <h2 style={styles.sectionTitle}>Fixtures</h2>
-            {fixtures.length === 0 && <p>No fixtures yet.</p>}
-            {fixtures.map(fixture => (
-                <div key={fixture.id} style={styles.card}>
-                    <strong>{fixture.opponent}</strong>
-                    <span style={styles.cardDetail}>
-                        {fixture.matchDate} | {fixture.venue}
-                    </span>
-                    <span style={styles.cardDetail}>
-                        Result: {fixture.actualHomeScore !== null
-                            ? `${fixture.actualHomeScore} - ${fixture.actualAwayScore}`
-                            : 'Not played yet'}
-                    </span>
-                </div>
-            ))}
-        </section>
+        <nav style={styles.nav}>
+            <NavLink to="/" end style={navLinkStyle}>Predictions</NavLink>
+            <NavLink to="/fixtures" style={navLinkStyle}>Fixtures</NavLink>
+            <NavLink to="/leaderboard" style={navLinkStyle}>Leaderboard</NavLink>
+            <button style={styles.logoutButton} onClick={onLogout}>Logout</button>
+        </nav>
     )
 }
 
-function PredictionsSection({ predictions }) {
-    return (
-        <section>
-            <h2 style={styles.sectionTitle}>My Predictions</h2>
-            {predictions.length === 0 && <p>No predictions yet.</p>}
-            {predictions.map(prediction => (
-                <div key={prediction.id} style={{...styles.card, borderLeftColor: '#ffffff'}}>
-                    <strong>{prediction.fixtureOpponent}</strong>
-                    <span style={styles.cardDetail}>
-                        Predicted: {prediction.predHomeScore} - {prediction.predAwayScore}
-                    </span>
-                    <span style={styles.cardDetail}>
-                        Points: {prediction.pointsEarned !== null ? prediction.pointsEarned : 'Pending'}
-                    </span>
-                </div>
-            ))}
-        </section>
-    )
-}
+function PredictionsPage() {
+    const [fixtures, setFixtures] = useState([])
+    const [predictions, setPredictions] = useState([])
 
-function StandingsSection({ standings }) {
+    useEffect(() => {
+        loadFixtures()
+        loadPredictions()
+    }, [])
+
+    async function loadFixtures() {
+        const response = await fetch(`${API_BASE}/fixtures`, {
+            headers: authHeaders()
+        })
+        const data = await response.json()
+        setFixtures(data)
+    }
+
+    async function loadPredictions() {
+        const response = await fetch(`${API_BASE}/predictions`, {
+            headers: authHeaders()
+        })
+        const data = await response.json()
+        setPredictions(data)
+    }
+
     return (
-        <section>
-            <h2 style={styles.sectionTitle}>Live Standings</h2>
-            <table style={styles.table}>
-                <thead>
-                    <tr>
-                        <th style={styles.th}>Rank</th>
-                        <th style={styles.th}>Player</th>
-                        <th style={styles.th}>Points</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {standings.map((entry, index) => (
-                        <tr key={entry.email}>
-                            <td style={styles.td}>{index + 1}</td>
-                            <td style={styles.td}>{entry.email}</td>
-                            <td style={styles.td}>{entry.totalPoints}</td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </section>
+        <div style={styles.mainContent}>
+            <PredictionForm fixtures={fixtures} onPredictionSubmitted={loadPredictions} />
+            <PredictionsSection predictions={predictions} />
+        </div>
     )
 }
 
@@ -136,12 +119,29 @@ function PredictionForm({ fixtures, onPredictionSubmitted }) {
     const [fixtureId, setFixtureId] = useState('')
     const [predHome, setPredHome] = useState('')
     const [predAway, setPredAway] = useState('')
+    const [predPenHome, setPredPenHome] = useState('')
+    const [predPenAway, setPredPenAway] = useState('')
     const [message, setMessage] = useState('')
+
+    const selectedFixture = fixtures.find(f => f.id === Number(fixtureId))
+    const isKnockout = selectedFixture?.isKnockout === true
 
     async function handleSubmit() {
         if (!fixtureId || predHome === '' || predAway === '') {
             setMessage('Please fill in all fields.')
             return
+        }
+
+        const body = {
+            userId: 1,
+            fixtureId: Number(fixtureId),
+            predHomeScore: Number(predHome),
+            predAwayScore: Number(predAway),
+        }
+
+        if (isKnockout) {
+            body.predPenaltiesHome = predPenHome !== '' ? Number(predPenHome) : null
+            body.predPenaltiesAway = predPenAway !== '' ? Number(predPenAway) : null
         }
 
         const response = await fetch(`${API_BASE}/predictions`, {
@@ -150,18 +150,15 @@ function PredictionForm({ fixtures, onPredictionSubmitted }) {
                 'Content-Type': 'application/json',
                 ...authHeaders()
             },
-            body: JSON.stringify({
-                userId: 1,
-                fixtureId: Number(fixtureId),
-                predHomeScore: Number(predHome),
-                predAwayScore: Number(predAway)
-            })
+            body: JSON.stringify(body)
         })
 
         if (response.ok) {
             setMessage('Prediction submitted!')
             setPredHome('')
             setPredAway('')
+            setPredPenHome('')
+            setPredPenAway('')
             setFixtureId('')
             onPredictionSubmitted()
         } else {
@@ -202,6 +199,27 @@ function PredictionForm({ fixtures, onPredictionSubmitted }) {
                     value={predAway}
                     onChange={e => setPredAway(e.target.value)}
                 />
+                {isKnockout && (
+                    <>
+                        <p style={styles.cardDetail}>If you think it goes to penalties, predict the shootout score:</p>
+                        <input
+                            style={styles.input}
+                            type="number"
+                            placeholder="Arsenal penalties"
+                            min="0"
+                            value={predPenHome}
+                            onChange={e => setPredPenHome(e.target.value)}
+                        />
+                        <input
+                            style={styles.input}
+                            type="number"
+                            placeholder="Opponent penalties"
+                            min="0"
+                            value={predPenAway}
+                            onChange={e => setPredPenAway(e.target.value)}
+                        />
+                    </>
+                )}
                 <button style={styles.primaryButton} onClick={handleSubmit}>
                     Submit Prediction
                 </button>
@@ -211,61 +229,133 @@ function PredictionForm({ fixtures, onPredictionSubmitted }) {
     )
 }
 
-function MainApp({ onLogout }) {
+function PredictionsSection({ predictions }) {
+    return (
+        <section>
+            <h2 style={styles.sectionTitle}>My Predictions</h2>
+            {predictions.length === 0 && <p>No predictions yet.</p>}
+            {predictions.map(prediction => (
+                <div key={prediction.id} style={{ ...styles.card, borderLeftColor: '#ffffff' }}>
+                    <strong>{prediction.fixtureOpponent}</strong>
+                    <span style={styles.cardDetail}>
+                        Predicted: {prediction.predHomeScore} - {prediction.predAwayScore}
+                    </span>
+                    {prediction.predPenaltiesHome !== null && (
+                        <span style={styles.cardDetail}>
+                            Penalties: {prediction.predPenaltiesHome} - {prediction.predPenaltiesAway}
+                        </span>
+                    )}
+                    <span style={styles.cardDetail}>
+                        Points: {prediction.pointsEarned !== null ? prediction.pointsEarned : 'Pending'}
+                    </span>
+                </div>
+            ))}
+        </section>
+    )
+}
+
+function FixturesPage() {
     const [fixtures, setFixtures] = useState([])
-    const [predictions, setPredictions] = useState([])
+
+    useEffect(() => {
+        async function load() {
+            const response = await fetch(`${API_BASE}/fixtures`, {
+                headers: authHeaders()
+            })
+            const data = await response.json()
+            setFixtures(data)
+        }
+        load()
+    }, [])
+
+    return (
+        <div style={styles.mainContent}>
+            <section>
+                <h2 style={styles.sectionTitle}>Fixtures</h2>
+                {fixtures.length === 0 && <p>No fixtures yet.</p>}
+                {fixtures.map(fixture => (
+                    <div key={fixture.id} style={styles.card}>
+                        <strong>{fixture.opponent}</strong>
+                        <span style={styles.cardDetail}>
+                            {fixture.matchDate} | {fixture.venue}
+                        </span>
+                        <span style={styles.cardDetail}>
+                            Kickoff: {fixture.matchTime ? fixture.matchTime.substring(0, 5) + ' UTC' : 'TBC'}
+                        </span>
+                        {fixture.isKnockout && (
+                            <span style={{ ...styles.cardDetail, color: '#db0007' }}>
+                                ⚔ Knockout — penalty prediction available
+                            </span>
+                        )}
+                        <span style={styles.cardDetail}>
+                            Result: {fixture.actualHomeScore !== null
+                                ? `${fixture.actualHomeScore} - ${fixture.actualAwayScore}`
+                                : 'Not played yet'}
+                        </span>
+                    </div>
+                ))}
+            </section>
+        </div>
+    )
+}
+
+function LeaderboardPage() {
     const [standings, setStandings] = useState([])
 
     useEffect(() => {
-        loadFixtures()
-        loadPredictions()
-        loadStandings()
+        async function load() {
+            const response = await fetch(`${API_BASE}/leaderboard`, {
+                headers: authHeaders()
+            })
+            const data = await response.json()
+            setStandings(data)
+        }
+        load()
     }, [])
 
-    async function loadFixtures() {
-        const response = await fetch(`${API_BASE}/fixtures`, {
-            headers: authHeaders()
-        })
-        const data = await response.json()
-        setFixtures(data)
-    }
-
-    async function loadPredictions() {
-        const response = await fetch(`${API_BASE}/predictions`, {
-            headers: authHeaders()
-        })
-        const data = await response.json()
-        setPredictions(data)
-    }
-
-    async function loadStandings() {
-        const response = await fetch(`${API_BASE}/leaderboard`, {
-            headers: authHeaders()
-        })
-        const data = await response.json()
-        setStandings(data)
-    }
-
     return (
-        <div>
+        <div style={styles.mainContent}>
+            <section>
+                <h2 style={styles.sectionTitle}>Leaderboard</h2>
+                <table style={styles.table}>
+                    <thead>
+                        <tr>
+                            <th style={styles.th}>Rank</th>
+                            <th style={styles.th}>Player</th>
+                            <th style={styles.th}>Points</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {standings.map((entry, index) => (
+                            <tr key={entry.email}>
+                                <td style={styles.td}>{index + 1}</td>
+                                <td style={styles.td}>{entry.email}</td>
+                                <td style={styles.td}>{entry.totalPoints}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+                {standings.length === 0 && <p style={{ marginTop: '16px' }}>No standings yet.</p>}
+            </section>
+        </div>
+    )
+}
+
+function MainApp({ onLogout }) {
+    return (
+        <BrowserRouter>
             <header style={styles.header}>
                 <h1 style={styles.headerTitle}>⚽ Arsenal Tracker</h1>
                 <p style={styles.headerSubtitle}>Predict the scores. Earn the points.</p>
             </header>
-
-            <div style={styles.mainContent}>
-                <FixturesSection fixtures={fixtures} />
-                <PredictionForm
-                    fixtures={fixtures}
-                    onPredictionSubmitted={loadPredictions}
-                />
-                <PredictionsSection predictions={predictions} />
-                <StandingsSection standings={standings} />
-                <button style={styles.logoutButton} onClick={onLogout}>
-                    Logout
-                </button>
-            </div>
-        </div>
+            <NavBar onLogout={onLogout} />
+            <Routes>
+                <Route path="/" element={<PredictionsPage />} />
+                <Route path="/fixtures" element={<FixturesPage />} />
+                <Route path="/leaderboard" element={<LeaderboardPage />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+        </BrowserRouter>
     )
 }
 
@@ -302,6 +392,21 @@ const styles = {
         color: '#ffcccc',
         marginTop: '4px',
     },
+    nav: {
+        backgroundColor: '#111111',
+        padding: '0 40px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        borderBottom: '1px solid #2a2a2a',
+    },
+    navLink: {
+        padding: '14px 16px',
+        textDecoration: 'none',
+        fontSize: '0.95rem',
+        fontWeight: '500',
+        transition: 'color 0.2s',
+    },
     loginWrapper: {
         display: 'flex',
         justifyContent: 'center',
@@ -323,6 +428,7 @@ const styles = {
         fontSize: '1.4rem',
         borderBottom: '2px solid #db0007',
         paddingBottom: '8px',
+        marginBottom: '16px',
     },
     input: {
         padding: '10px',
@@ -345,17 +451,6 @@ const styles = {
     errorText: {
         color: '#ff6666',
         fontSize: '0.9rem',
-    },
-    logoutButton: {
-        padding: '8px 16px',
-        backgroundColor: 'transparent',
-        color: '#aaaaaa',
-        border: '1px solid #444444',
-        borderRadius: '4px',
-        cursor: 'pointer',
-        width: 'fit-content',
-        margin: '0 auto',
-        display: 'block',
     },
     mainContent: {
         maxWidth: '800px',
@@ -403,5 +498,13 @@ const styles = {
         padding: '12px 16px',
         textAlign: 'left',
         borderBottom: '1px solid #2a2a2a',
+    },
+    logoutButton: {
+        marginLeft: 'auto',
+        padding: '8px 16px',
+        backgroundColor: 'transparent',
+        color: '#aaaaaa',
+        border: '1px solid #444444',
+        borderRadius: '4px',
     },
 }
