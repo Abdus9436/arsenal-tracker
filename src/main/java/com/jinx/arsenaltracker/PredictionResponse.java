@@ -10,6 +10,8 @@ public class PredictionResponse {
     private Integer predHomeScore;
     private Integer predAwayScore;
     private Integer pointsEarned;
+    private Integer predPenaltiesHome;
+    private Integer predPenaltiesAway;
 
     public PredictionResponse(Prediction prediction) {
         this.id = prediction.getId();
@@ -20,6 +22,8 @@ public class PredictionResponse {
         this.predHomeScore = prediction.getPredHomeScore();
         this.predAwayScore = prediction.getPredAwayScore();
         this.pointsEarned = prediction.getPointsEarned();
+        this.predPenaltiesHome = prediction.getPredPenaltiesHome();
+        this.predPenaltiesAway = prediction.getPredPenaltiesAway();
     }
 
     public Long getId() {
@@ -52,5 +56,13 @@ public class PredictionResponse {
 
     public Integer getPointsEarned() {
         return pointsEarned;
+    }
+
+    public Integer getPredPenaltiesHome() {
+        return predPenaltiesHome;
+    }
+
+    public Integer getPredPenaltiesAway() {
+        return predPenaltiesAway;
     }
 }

@@ -50,6 +50,8 @@ public class PredictionController {
         prediction.setFixture(fixture);
         prediction.setPredHomeScore(request.getPredHomeScore());
         prediction.setPredAwayScore(request.getPredAwayScore());
+        prediction.setPredPenaltiesHome(request.getPredPenaltiesHome());
+        prediction.setPredPenaltiesAway(request.getPredPenaltiesAway());
 
         Prediction saved = predictionRepository.save(prediction);
         return ResponseEntity.ok(new PredictionResponse(saved));

@@ -23,6 +23,8 @@ public class Prediction {
     private Integer predHomeScore;
     private Integer predAwayScore;
     private Integer pointsEarned;
+    private Integer predPenaltiesHome;
+    private Integer predPenaltiesAway;
 
     public Prediction() {
     }
@@ -73,5 +75,21 @@ public class Prediction {
 
     public void setPointsEarned(Integer pointsEarned) {
         this.pointsEarned = pointsEarned;
+    }
+
+    public Integer getPredPenaltiesHome() {
+        return predPenaltiesHome;
+    }
+
+    public void setPredPenaltiesHome(Integer predPenaltiesHome) {
+        this.predPenaltiesHome = predPenaltiesHome;
+    }
+
+    public Integer getPredPenaltiesAway() {
+        return predPenaltiesAway;
+    }
+
+    public void setPredPenaltiesAway(Integer predPenaltiesAway) {
+        this.predPenaltiesAway = predPenaltiesAway;
     }
 }

@@ -6,6 +6,8 @@ public class PredictionRequest {
     private Long fixtureId;
     private Integer predHomeScore;
     private Integer predAwayScore;
+    private Integer predPenaltiesHome;
+    private Integer predPenaltiesAway;
 
     public Long getUserId() {
         return userId;
@@ -37,5 +39,21 @@ public class PredictionRequest {
 
     public void setPredAwayScore(Integer predAwayScore) {
         this.predAwayScore = predAwayScore;
+    }
+
+    public Integer getPredPenaltiesHome() {
+        return predPenaltiesHome;
+    }
+
+    public void setPredPenaltiesHome(Integer predPenaltiesHome) {
+        this.predPenaltiesHome = predPenaltiesHome;
+    }
+
+    public Integer getPredPenaltiesAway() {
+        return predPenaltiesAway;
+    }
+
+    public void setPredPenaltiesAway(Integer predPenaltiesAway) {
+        this.predPenaltiesAway = predPenaltiesAway;
     }
 }

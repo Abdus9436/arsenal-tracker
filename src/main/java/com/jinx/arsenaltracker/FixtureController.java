@@ -1,9 +1,11 @@
 package com.jinx.arsenaltracker;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 @RestController
@@ -52,6 +54,15 @@ public class FixtureController {
         if (updates.getVenue() != null) fixture.setVenue(updates.getVenue());
 
         return fixtureRepository.save(fixture);
+    }
+
+    @Autowired
+    private FootballApiService footballApiService;
+
+    @PostMapping("/sync")
+    public ResponseEntity<?> syncFixtures() {
+        footballApiService.fetchAndSync();
+        return ResponseEntity.ok(Map.of("message", "Sync triggered"));
     }
 
 }

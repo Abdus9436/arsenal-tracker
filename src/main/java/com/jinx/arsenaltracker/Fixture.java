@@ -21,6 +21,7 @@ public class Fixture {
     private Integer actualAwayScore;
     private String source;
     private java.time.LocalTime matchTime;
+    private Boolean isKnockout;
 
 
     public Fixture() {
@@ -88,5 +89,13 @@ public class Fixture {
 
     public void setMatchTime(java.time.LocalTime matchTime) {
         this.matchTime = matchTime;
+    }
+
+    public Boolean getIsKnockout() {
+        return isKnockout;
+    }
+
+    public void setIsKnockout(Boolean isKnockout) {
+        this.isKnockout = isKnockout;
     }
 }
