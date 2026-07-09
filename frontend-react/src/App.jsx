@@ -12,9 +12,13 @@ function authHeaders() {
 }
 
 function LoginPage({ onLoginSuccess }) {
+    const [isRegistering, setIsRegistering] = useState(false)
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+    const [displayName, setDisplayName] = useState('')
+    const [showPassword, setShowPassword] = useState(false)
     const [error, setError] = useState('')
+    const [success, setSuccess] = useState('')
 
     async function handleLogin() {
         const response = await fetch(`${API_BASE}/auth/login`, {
@@ -32,6 +36,56 @@ function LoginPage({ onLoginSuccess }) {
         }
     }
 
+   async function handleRegister() {
+       if (!displayName || !email || !password) {
+           setError('Please fill in all fields.')
+           return
+       }
+
+       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+       if (!emailRegex.test(email)) {
+           setError('Please enter a valid email address.')
+           return
+       }
+
+       if (displayName.length < 3) {
+           setError('Username must be at least 3 characters.')
+           return
+       }
+
+       if (password.length < 6) {
+           setError('Password must be at least 6 characters.')
+           return
+       }
+
+       const response = await fetch(`${API_BASE}/users/register`, {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({ email, password, displayName })
+       })
+
+       if (response.ok) {
+           setSuccess('Account created! You can now log in.')
+           setError('')
+           setIsRegistering(false)
+           setDisplayName('')
+           setPassword('')
+       } else {
+           const data = await response.json()
+           setError(data.error || 'Registration failed.')
+       }
+   }
+
+    function toggle() {
+        setIsRegistering(!isRegistering)
+        setError('')
+        setSuccess('')
+        setEmail('')
+        setPassword('')
+        setDisplayName('')
+        setShowPassword(false)
+    }
+
     return (
         <>
             <header style={styles.header}>
@@ -39,26 +93,81 @@ function LoginPage({ onLoginSuccess }) {
                 <p style={styles.headerSubtitle}>Predict the scores. Earn the points.</p>
             </header>
             <div style={styles.loginWrapper}>
+                <div style={styles.loginLeft}>
+                    <h2 style={styles.loginTagline}>Your Arsenal. Your Predictions.</h2>
+                    <p style={styles.loginDescription}>
+                        Arsenal Tracker is a prediction league for Arsenal fans.
+                        Pick the score before every match, earn points for correct
+                        results, and compete with friends on the leaderboard.
+                    </p>
+                    <ul style={styles.loginFeatures}>
+                        <li>⚽ Predict scores for every Arsenal fixture</li>
+                        <li>🎯 3 points for exact score, 1 for correct outcome</li>
+                        <li>🏆 Climb the leaderboard with your predictions</li>
+                        <li>🥅 Penalty shootout predictions for knockout matches</li>
+                    </ul>
+                </div>
                 <div style={styles.loginBox}>
-                    <h2 style={styles.sectionTitle}>Login</h2>
+                    <h2 style={styles.sectionTitle}>{isRegistering ? 'Register' : 'Login'}</h2>
+
+                    {isRegistering && (
+                        <input
+                            style={styles.input}
+                            type="text"
+                            placeholder="Username"
+                            value={displayName}
+                            onChange={e => setDisplayName(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && handleRegister()}
+                        />
+                    )}
                     <input
                         style={styles.input}
-                        type="email"
-                        placeholder="Email"
+                        type="text"
+                        placeholder="Email or username"
                         value={email}
                         onChange={e => setEmail(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && (isRegistering ? handleRegister() : handleLogin())}
                     />
-                    <input
-                        style={styles.input}
-                        type="password"
-                        placeholder="Password"
-                        value={password}
-                        onChange={e => setPassword(e.target.value)}
-                    />
-                    <button style={styles.primaryButton} onClick={handleLogin}>
-                        Login
+                    <div style={styles.passwordWrapper}>
+                        <input
+                            style={{ ...styles.input, width: '100%', paddingRight: '40px' }}
+                            type={showPassword ? 'text' : 'password'}
+                            placeholder="Password"
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                            onKeyDown={e => {
+                                if (e.key === 'Enter') {
+                                    isRegistering ? handleRegister() : handleLogin()
+                                }
+                            }}
+                        />
+                        <button
+                            style={styles.eyeButton}
+                            onClick={() => setShowPassword(!showPassword)}
+                            type="button"
+                        >
+                            {showPassword ? '🙈' : '👁'}
+                        </button>
+                    </div>
+                    <button
+                        style={styles.primaryButton}
+                        onClick={isRegistering ? handleRegister : handleLogin}
+                    >
+                        {isRegistering ? 'Create Account' : 'Login'}
                     </button>
+
                     {error && <p style={styles.errorText}>{error}</p>}
+                    {success && <p style={{ ...styles.errorText, color: '#66cc66' }}>{success}</p>}
+
+                    <p style={styles.cardDetail}>
+                        {isRegistering ? 'Already have an account?' : "Don't have an account?"}{' '}
+                        <span
+                            onClick={toggle}
+                            style={{ color: '#db0007', cursor: 'pointer', textDecoration: 'underline' }}
+                        >
+                            {isRegistering ? 'Login' : 'Register'}
+                        </span>
+                    </p>
                 </div>
             </div>
         </>
@@ -107,10 +216,20 @@ function PredictionsPage() {
         setPredictions(data)
     }
 
+    async function deletePrediction(id) {
+        const response = await fetch(`${API_BASE}/predictions/${id}`, {
+            method: 'DELETE',
+            headers: authHeaders()
+        })
+        if (response.ok) {
+            loadPredictions()
+        }
+    }
+
     return (
         <div style={styles.mainContent}>
             <PredictionForm fixtures={fixtures} onPredictionSubmitted={loadPredictions} />
-            <PredictionsSection predictions={predictions} />
+            <PredictionsSection predictions={predictions} onDelete={deletePrediction} />
         </div>
     )
 }
@@ -133,7 +252,6 @@ function PredictionForm({ fixtures, onPredictionSubmitted }) {
         }
 
         const body = {
-            userId: 1,
             fixtureId: Number(fixtureId),
             predHomeScore: Number(predHome),
             predAwayScore: Number(predAway),
@@ -229,14 +347,24 @@ function PredictionForm({ fixtures, onPredictionSubmitted }) {
     )
 }
 
-function PredictionsSection({ predictions }) {
+function PredictionsSection({ predictions, onDelete }) {
     return (
         <section>
             <h2 style={styles.sectionTitle}>My Predictions</h2>
             {predictions.length === 0 && <p>No predictions yet.</p>}
             {predictions.map(prediction => (
                 <div key={prediction.id} style={{ ...styles.card, borderLeftColor: '#ffffff' }}>
-                    <strong>{prediction.fixtureOpponent}</strong>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <strong>{prediction.fixtureOpponent}</strong>
+                        {prediction.pointsEarned === null && (
+                            <button
+                                onClick={() => onDelete(prediction.id)}
+                                style={styles.deleteButton}
+                            >
+                                🗑️
+                            </button>
+                        )}
+                    </div>
                     <span style={styles.cardDetail}>
                         Predicted: {prediction.predHomeScore} - {prediction.predAwayScore}
                     </span>
@@ -506,5 +634,75 @@ const styles = {
         color: '#aaaaaa',
         border: '1px solid #444444',
         borderRadius: '4px',
+    },
+    loginWrapper: {
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: 'calc(100vh - 100px)',
+        gap: '60px',
+        padding: '40px',
+        maxWidth: '1000px',
+        margin: '0 auto',
+    },
+    loginLeft: {
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px',
+    },
+    loginTagline: {
+        fontSize: '1.8rem',
+        color: '#ffffff',
+        lineHeight: '1.3',
+    },
+    loginDescription: {
+        color: '#aaaaaa',
+        fontSize: '1rem',
+        lineHeight: '1.7',
+    },
+    loginFeatures: {
+        listStyle: 'none',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px',
+        color: '#cccccc',
+        fontSize: '0.95rem',
+        lineHeight: '1.5',
+    },
+    loginBox: {
+        backgroundColor: '#1a1a1a',
+        padding: '40px',
+        borderRadius: '8px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px',
+        width: '100%',
+        maxWidth: '380px',
+        flexShrink: 0,
+    },
+    passwordWrapper: {
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+    },
+    eyeButton: {
+        position: 'absolute',
+        right: '10px',
+        background: 'none',
+        border: 'none',
+        cursor: 'pointer',
+        fontSize: '1rem',
+        padding: '0',
+        color: '#aaaaaa',
+    },
+    deleteButton: {
+        padding: '4px 8px',
+        backgroundColor: 'transparent',
+        color: '#000000',
+        border: 'none',
+        borderRadius: '4px',
+        cursor: 'pointer',
+        fontSize: '1.1rem',
     },
 }

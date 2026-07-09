@@ -2,20 +2,11 @@ package com.jinx.arsenaltracker;
 
 public class PredictionRequest {
 
-    private Long userId;
     private Long fixtureId;
     private Integer predHomeScore;
     private Integer predAwayScore;
     private Integer predPenaltiesHome;
     private Integer predPenaltiesAway;
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
 
     public Long getFixtureId() {
         return fixtureId;

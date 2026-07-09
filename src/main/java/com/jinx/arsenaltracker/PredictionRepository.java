@@ -7,6 +7,7 @@ import java.util.List;
 
 public interface PredictionRepository extends JpaRepository<Prediction, Long> {
     List<Prediction> findByFixture(Fixture fixture);
+    List<Prediction> findByUserId(Long userId);
 
     boolean existsByUserIdAndFixtureId(Long userId, Long fixtureId);
 

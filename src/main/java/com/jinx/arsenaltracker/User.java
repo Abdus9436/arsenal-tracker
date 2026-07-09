@@ -1,9 +1,6 @@
 package com.jinx.arsenaltracker;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 @Entity
 public class User {
@@ -14,6 +11,8 @@ public class User {
 
     private String email;
     private String passwordHash;
+
+    @Column(unique = true)
     private String displayName;
 
     public User() {

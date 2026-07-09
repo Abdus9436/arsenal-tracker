@@ -25,9 +25,13 @@ public class AuthController {
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail()).orElse(null);
 
+        if (user == null) {
+            user = userRepository.findByDisplayName(request.getEmail()).orElse(null);
+        }
+
         if (user == null || !passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Invalid email or password"));
+                    .body(Map.of("error", "Invalid credentials"));
         }
 
         String token = jwtUtil.generateToken(user.getEmail());
