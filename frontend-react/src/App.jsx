@@ -228,6 +228,35 @@ function PredictionsPage() {
 
     return (
         <div style={styles.mainContent}>
+            <section>
+                <h2 style={styles.sectionTitle}>How It Works</h2>
+                <div style={styles.rulesCard}>
+                    <div style={styles.rulesGrid}>
+                        <div style={styles.ruleItem}>
+                            <span style={styles.rulePoints}>3 pts</span>
+                            <span style={styles.ruleLabel}>Exact score</span>
+                            <span style={styles.ruleExample}>e.g. You predict 2-1, Arsenal win 2-1</span>
+                        </div>
+                        <div style={styles.ruleDivider} />
+                        <div style={styles.ruleItem}>
+                            <span style={styles.rulePoints}>1 pt</span>
+                            <span style={styles.ruleLabel}>Correct outcome</span>
+                            <span style={styles.ruleExample}>e.g. You predict 2-1, Arsenal win 3-0</span>
+                        </div>
+                        <div style={styles.ruleDivider} />
+                        <div style={styles.ruleItem}>
+                            <span style={styles.rulePoints}>0 pts</span>
+                            <span style={styles.ruleLabel}>Wrong outcome</span>
+                            <span style={styles.ruleExample}>e.g. You predict Arsenal win, they draw or lose</span>
+                        </div>
+                    </div>
+                    <div style={styles.ruleNotes}>
+                        <p style={styles.ruleNote}>📅 Predictions must be submitted before kickoff</p>
+                        <p style={styles.ruleNote}>🔄 You can delete and re-predict any time before kickoff</p>
+                        <p style={styles.ruleNote}>🥅 Knockout matches include an optional penalty shootout prediction</p>
+                    </div>
+                </div>
+            </section>
             <PredictionForm fixtures={fixtures} onPredictionSubmitted={loadPredictions} />
             <PredictionsSection predictions={predictions} onDelete={deletePrediction} />
         </div>
@@ -704,5 +733,58 @@ const styles = {
         borderRadius: '4px',
         cursor: 'pointer',
         fontSize: '1.1rem',
+    },
+    rulesCard: {
+        backgroundColor: '#1a1a1a',
+        borderRadius: '6px',
+        padding: '20px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px',
+    },
+    rulesGrid: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0',
+    },
+    ruleItem: {
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '6px',
+        textAlign: 'center',
+        padding: '0 16px',
+    },
+    ruleDivider: {
+        width: '1px',
+        height: '60px',
+        backgroundColor: '#2a2a2a',
+        flexShrink: 0,
+    },
+    rulePoints: {
+        fontSize: '1.6rem',
+        fontWeight: 'bold',
+        color: '#db0007',
+    },
+    ruleLabel: {
+        fontSize: '0.95rem',
+        color: '#ffffff',
+        fontWeight: '500',
+    },
+    ruleExample: {
+        fontSize: '0.8rem',
+        color: '#777777',
+    },
+    ruleNotes: {
+        borderTop: '1px solid #2a2a2a',
+        paddingTop: '16px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+    },
+    ruleNote: {
+        fontSize: '0.85rem',
+        color: '#aaaaaa',
     },
 }
