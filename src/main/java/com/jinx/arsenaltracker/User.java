@@ -11,9 +11,17 @@ public class User {
 
     private String email;
     private String passwordHash;
+    private String bio;
 
     @Column(unique = true)
     private String displayName;
+
+    @Column(columnDefinition = "LONGTEXT")
+    private String profilePicture;
+
+    @Column(length = 2)
+    private String initials;
+
 
     public User() {
     }
@@ -48,5 +56,29 @@ public class User {
 
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
+    }
+
+    public String getBio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
+    }
+
+    public String getProfilePicture() {
+        return profilePicture;
+    }
+
+    public void setProfilePicture(String profilePicture) {
+        this.profilePicture = profilePicture;
+    }
+
+    public String getInitials() {
+        return initials;
+    }
+
+    public void setInitials(String initials) {
+        this.initials = initials;
     }
 }

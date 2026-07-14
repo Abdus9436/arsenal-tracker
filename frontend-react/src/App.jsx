@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom'
 
 const API_BASE = '/api'
 
@@ -89,8 +89,10 @@ function LoginPage({ onLoginSuccess }) {
     return (
         <>
             <header style={styles.header}>
-                <h1 style={styles.headerTitle}>⚽ Arsenal Tracker</h1>
-                <p style={styles.headerSubtitle}>Predict the scores. Earn the points.</p>
+                <div style={styles.headerLeft}>
+                    <h1 style={styles.headerTitle}>⚽ Arsenal Tracker</h1>
+                    <p style={styles.headerSubtitle}>Predict the scores. Earn the points.</p>
+                </div>
             </header>
             <div style={styles.loginWrapper}>
                 <div style={styles.loginLeft}>
@@ -174,7 +176,36 @@ function LoginPage({ onLoginSuccess }) {
     )
 }
 
-function NavBar({ onLogout }) {
+function AppHeader({ onLogout }) {
+    const [profile, setProfile] = useState({ displayName: '', initials: '', profilePicture: '' })
+    const navigate = useNavigate()
+
+    useEffect(() => {
+        async function loadProfile() {
+            const response = await fetch(`${API_BASE}/profile`, {
+                headers: authHeaders()
+            })
+            if (response.ok) {
+                const data = await response.json()
+                setProfile(data)
+            }
+        }
+        loadProfile()
+    }, [])
+
+    function getAvatarContent() {
+        if (profile.profilePicture) {
+            return <img src={profile.profilePicture} alt="avatar" style={styles.avatarImg} />
+        }
+        if (profile.initials) {
+            return <span>{profile.initials.toUpperCase()}</span>
+        }
+        if (profile.displayName) {
+            return <span>{profile.displayName.substring(0, 2).toUpperCase()}</span>
+        }
+        return <span>?</span>
+    }
+
     const navLinkStyle = ({ isActive }) => ({
         ...styles.navLink,
         color: isActive ? '#ffffff' : '#aaaaaa',
@@ -182,12 +213,29 @@ function NavBar({ onLogout }) {
     })
 
     return (
-        <nav style={styles.nav}>
-            <NavLink to="/" end style={navLinkStyle}>Predictions</NavLink>
-            <NavLink to="/fixtures" style={navLinkStyle}>Fixtures</NavLink>
-            <NavLink to="/leaderboard" style={navLinkStyle}>Leaderboard</NavLink>
-            <button style={styles.logoutButton} onClick={onLogout}>Logout</button>
-        </nav>
+        <>
+            <header style={styles.header}>
+                <div style={styles.headerLeft}>
+                    <h1 style={styles.headerTitle}>⚽ Arsenal Tracker</h1>
+                    <p style={styles.headerSubtitle}>Predict the scores. Earn the points.</p>
+                </div>
+                <div style={styles.headerRight}>
+                    <div
+                        style={styles.avatar}
+                        onClick={() => navigate('/profile')}
+                        title="Edit profile"
+                    >
+                        {getAvatarContent()}
+                    </div>
+                    <button style={styles.logoutButton} onClick={onLogout}>Logout</button>
+                </div>
+            </header>
+            <nav style={styles.nav}>
+                <NavLink to="/" end style={navLinkStyle}>Predictions</NavLink>
+                <NavLink to="/fixtures" style={navLinkStyle}>Fixtures</NavLink>
+                <NavLink to="/leaderboard" style={navLinkStyle}>Leaderboard</NavLink>
+            </nav>
+        </>
     )
 }
 
@@ -498,18 +546,323 @@ function LeaderboardPage() {
     )
 }
 
+function ProfilePage() {
+    const [profile, setProfile] = useState({
+        displayName: '', email: '', bio: '', profilePicture: '', initials: ''
+    })
+    const [message, setMessage] = useState('')
+    const [error, setError] = useState('')
+    const [passwordData, setPasswordData] = useState({
+        currentPassword: '', newPassword: '', confirmPassword: ''
+    })
+    const [passwordMessage, setPasswordMessage] = useState('')
+    const [passwordError, setPasswordError] = useState('')
+    const [deletePassword, setDeletePassword] = useState('')
+    const [deleteError, setDeleteError] = useState('')
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+    const navigate = useNavigate()
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+    const [showNewPassword, setShowNewPassword] = useState(false)
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
+    useEffect(() => {
+        loadProfile()
+    }, [])
+
+    async function loadProfile() {
+        const response = await fetch(`${API_BASE}/profile`, {
+            headers: authHeaders()
+        })
+        if (response.ok) {
+            const data = await response.json()
+            setProfile(data)
+        }
+    }
+
+    function handleImageUpload(e) {
+        const file = e.target.files[0]
+        if (!file) return
+
+        if (file.size > 200000) {
+            setError('Image must be under 200KB.')
+            return
+        }
+
+        const reader = new FileReader()
+        reader.onload = () => {
+            setProfile(prev => ({ ...prev, profilePicture: reader.result }))
+        }
+        reader.readAsDataURL(file)
+    }
+
+    async function handleProfileSave() {
+        setError('')
+        setMessage('')
+
+        const response = await fetch(`${API_BASE}/profile`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', ...authHeaders() },
+            body: JSON.stringify({
+                displayName: profile.displayName,
+                email: profile.email,
+                bio: profile.bio,
+                profilePicture: profile.profilePicture,
+                initials: profile.initials
+            })
+        })
+
+        if (response.ok) {
+            setMessage('Profile updated successfully.')
+        } else {
+            const data = await response.json()
+            setError(data.error || 'Failed to update profile.')
+        }
+    }
+
+    async function handlePasswordChange() {
+        setPasswordError('')
+        setPasswordMessage('')
+
+        if (passwordData.newPassword !== passwordData.confirmPassword) {
+            setPasswordError('New passwords do not match.')
+            return
+        }
+
+        if (passwordData.newPassword.length < 6) {
+            setPasswordError('New password must be at least 6 characters.')
+            return
+        }
+
+        const response = await fetch(`${API_BASE}/profile/password`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', ...authHeaders() },
+            body: JSON.stringify({
+                currentPassword: passwordData.currentPassword,
+                newPassword: passwordData.newPassword
+            })
+        })
+
+        if (response.ok) {
+            setPasswordMessage('Password changed successfully.')
+            setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
+        } else {
+            const data = await response.json()
+            setPasswordError(data.error || 'Failed to change password.')
+        }
+    }
+
+    async function handleDeleteAccount() {
+        const response = await fetch(`${API_BASE}/profile/account`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json', ...authHeaders() },
+            body: JSON.stringify({ password: deletePassword })
+        })
+
+        if (response.ok) {
+            localStorage.removeItem('token')
+            navigate('/')
+            window.location.reload()
+        } else {
+            const data = await response.json()
+            setDeleteError(data.error || 'Failed to delete account.')
+        }
+    }
+
+    function getAvatarPreview() {
+        if (profile.profilePicture) {
+            return <img src={profile.profilePicture} alt="preview" style={styles.avatarPreviewImg} />
+        }
+        const display = profile.initials || profile.displayName?.substring(0, 2) || '?'
+        return <span style={{ fontSize: '2rem' }}>{display.toUpperCase()}</span>
+    }
+
+    return (
+        <div style={styles.mainContent}>
+            <section>
+                <h2 style={styles.sectionTitle}>Edit Profile</h2>
+                <div style={styles.form}>
+                    <div style={styles.avatarSection}>
+                        <div style={styles.avatarPreview}>
+                            {getAvatarPreview()}
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <label style={styles.uploadLabel}>
+                                Upload Photo (max 200KB)
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleImageUpload}
+                                    style={{ display: 'none' }}
+                                />
+                            </label>
+                            {profile.profilePicture && (
+                                <button
+                                    style={{ ...styles.primaryButton, backgroundColor: 'transparent', color: '#ff6666', border: '1px solid #ff6666' }}
+                                    onClick={() => setProfile(prev => ({ ...prev, profilePicture: '' }))}
+                                >
+                                    Remove Photo
+                                </button>
+                            )}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <label style={styles.cardDetail}>Initials (shown when no photo)</label>
+                                <input
+                                    style={{ ...styles.input, width: '60px', textAlign: 'center', textTransform: 'uppercase' }}
+                                    type="text"
+                                    maxLength={2}
+                                    placeholder="AB"
+                                    value={profile.initials}
+                                    onChange={e => setProfile(prev => ({ ...prev, initials: e.target.value.toUpperCase() }))}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <label style={styles.cardDetail}>Username</label>
+                        <input
+                            style={styles.input}
+                            type="text"
+                            value={profile.displayName}
+                            onChange={e => setProfile(prev => ({ ...prev, displayName: e.target.value }))}
+                        />
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <label style={styles.cardDetail}>Email</label>
+                        <input
+                            style={styles.input}
+                            type="email"
+                            value={profile.email}
+                            onChange={e => setProfile(prev => ({ ...prev, email: e.target.value }))}
+                        />
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <label style={styles.cardDetail}>Bio</label>
+                        <textarea
+                            style={{ ...styles.input, minHeight: '80px', resize: 'vertical', fontFamily: 'Arial, sans-serif' }}
+                            placeholder="Tell others a bit about yourself..."
+                            value={profile.bio}
+                            onChange={e => setProfile(prev => ({ ...prev, bio: e.target.value }))}
+                        />
+                    </div>
+
+                    <button style={styles.primaryButton} onClick={handleProfileSave}>
+                        Save Changes
+                    </button>
+                    {message && <p style={{ ...styles.errorText, color: '#66cc66' }}>{message}</p>}
+                    {error && <p style={styles.errorText}>{error}</p>}
+                </div>
+            </section>
+
+            <section>
+                <h2 style={styles.sectionTitle}>Change Password</h2>
+                <div style={styles.form}>
+                    <div style={styles.passwordWrapper}>
+                        <input
+                            style={{ ...styles.input, width: '100%', paddingRight: '40px' }}
+                            type={showCurrentPassword ? 'text' : 'password'}
+                            placeholder="Current password"
+                            value={passwordData.currentPassword}
+                            onChange={e => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                        />
+                        <button style={styles.eyeButton} onClick={() => setShowCurrentPassword(!showCurrentPassword)} type="button">
+                            {showCurrentPassword ? '🙈' : '👁'}
+                        </button>
+                    </div>
+
+                    <div style={styles.passwordWrapper}>
+                        <input
+                            style={{ ...styles.input, width: '100%', paddingRight: '40px' }}
+                            type={showNewPassword ? 'text' : 'password'}
+                            placeholder="New password (min 6 characters)"
+                            value={passwordData.newPassword}
+                            onChange={e => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                        />
+                        <button style={styles.eyeButton} onClick={() => setShowNewPassword(!showNewPassword)} type="button">
+                            {showNewPassword ? '🙈' : '👁'}
+                        </button>
+                    </div>
+
+                    <div style={styles.passwordWrapper}>
+                        <input
+                            style={{ ...styles.input, width: '100%', paddingRight: '40px' }}
+                            type={showConfirmPassword ? 'text' : 'password'}
+                            placeholder="Confirm new password"
+                            value={passwordData.confirmPassword}
+                            onChange={e => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                        />
+                        <button style={styles.eyeButton} onClick={() => setShowConfirmPassword(!showConfirmPassword)} type="button">
+                            {showConfirmPassword ? '🙈' : '👁'}
+                        </button>
+                    </div>
+                    <button style={styles.primaryButton} onClick={handlePasswordChange}>
+                        Change Password
+                    </button>
+                    {passwordMessage && <p style={{ ...styles.errorText, color: '#66cc66' }}>{passwordMessage}</p>}
+                    {passwordError && <p style={styles.errorText}>{passwordError}</p>}
+                </div>
+            </section>
+
+            <section>
+                <h2 style={{ ...styles.sectionTitle, color: '#ff4444', borderBottomColor: '#ff4444' }}>
+                    Danger Zone
+                </h2>
+                <div style={{ ...styles.form, borderLeft: '4px solid #ff4444' }}>
+                    <p style={styles.cardDetail}>
+                        Deleting your account is permanent. All your predictions and points will be lost.
+                    </p>
+                    {!showDeleteConfirm ? (
+                        <button
+                            style={{ ...styles.primaryButton, backgroundColor: 'transparent', color: '#ff4444', border: '1px solid #ff4444' }}
+                            onClick={() => setShowDeleteConfirm(true)}
+                        >
+                            Delete My Account
+                        </button>
+                    ) : (
+                        <>
+                            <p style={{ ...styles.cardDetail, color: '#ff4444' }}>
+                                Enter your password to confirm deletion:
+                            </p>
+                            <input
+                                style={styles.input}
+                                type="password"
+                                placeholder="Your password"
+                                value={deletePassword}
+                                onChange={e => setDeletePassword(e.target.value)}
+                            />
+                            <div style={{ display: 'flex', gap: '12px' }}>
+                                <button
+                                    style={{ ...styles.primaryButton, backgroundColor: '#ff4444' }}
+                                    onClick={handleDeleteAccount}
+                                >
+                                    Confirm Delete
+                                </button>
+                                <button
+                                    style={{ ...styles.primaryButton, backgroundColor: 'transparent', color: '#aaaaaa', border: '1px solid #444444' }}
+                                    onClick={() => { setShowDeleteConfirm(false); setDeletePassword(''); setDeleteError('') }}
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                            {deleteError && <p style={styles.errorText}>{deleteError}</p>}
+                        </>
+                    )}
+                </div>
+            </section>
+        </div>
+    )
+}
+
 function MainApp({ onLogout }) {
     return (
         <BrowserRouter>
-            <header style={styles.header}>
-                <h1 style={styles.headerTitle}>⚽ Arsenal Tracker</h1>
-                <p style={styles.headerSubtitle}>Predict the scores. Earn the points.</p>
-            </header>
-            <NavBar onLogout={onLogout} />
+            <AppHeader onLogout={onLogout} />
             <Routes>
                 <Route path="/" element={<PredictionsPage />} />
                 <Route path="/fixtures" element={<FixturesPage />} />
                 <Route path="/leaderboard" element={<LeaderboardPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
         </BrowserRouter>
@@ -540,6 +893,9 @@ const styles = {
         backgroundColor: '#9b0005',
         padding: '20px 40px',
         borderBottom: '4px solid #ffffff',
+        display: 'flex',
+        alignItems: 'flex-start',
+        justifyContent: 'space-between',
     },
     headerTitle: {
         fontSize: '2rem',
@@ -657,12 +1013,13 @@ const styles = {
         borderBottom: '1px solid #2a2a2a',
     },
     logoutButton: {
-        marginLeft: 'auto',
-        padding: '8px 16px',
+        padding: '4px 12px',
         backgroundColor: 'transparent',
-        color: '#aaaaaa',
-        border: '1px solid #444444',
+        color: '#ffffff',
+        border: '1px solid #ffffff',
         borderRadius: '4px',
+        cursor: 'pointer',
+        fontSize: '0.75rem',
     },
     loginWrapper: {
         display: 'flex',
@@ -786,5 +1143,70 @@ const styles = {
     ruleNote: {
         fontSize: '0.85rem',
         color: '#aaaaaa',
+    },
+    headerLeft: {
+        display: 'flex',
+        flexDirection: 'column',
+    },
+    headerRight: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '8px',
+    },
+    avatar: {
+        width: '42px',
+        height: '42px',
+        borderRadius: '50%',
+        backgroundColor: '#db0007',
+        color: '#ffffff',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontWeight: 'bold',
+        fontSize: '0.9rem',
+        cursor: 'pointer',
+        border: '2px solid #ffffff',
+        overflow: 'hidden',
+        flexShrink: 0,
+    },
+    avatarImg: {
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+    },
+    avatarSection: {
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: '20px',
+    },
+    avatarPreview: {
+        width: '80px',
+        height: '80px',
+        borderRadius: '50%',
+        backgroundColor: '#db0007',
+        color: '#ffffff',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontWeight: 'bold',
+        border: '2px solid #444444',
+        overflow: 'hidden',
+        flexShrink: 0,
+    },
+    avatarPreviewImg: {
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+    },
+    uploadLabel: {
+        padding: '8px 16px',
+        backgroundColor: '#2a2a2a',
+        color: '#ffffff',
+        border: '1px solid #444444',
+        borderRadius: '4px',
+        cursor: 'pointer',
+        fontSize: '0.9rem',
+        textAlign: 'center',
     },
 }
