@@ -25,7 +25,7 @@ public class FixtureController {
 
     @GetMapping
     public List<Fixture> getAllFixtures() {
-        return fixtureRepository.findAll();
+        return fixtureRepository.findAllByOrderByMatchDateAsc();
     }
 
     @PutMapping("/{id}/result")

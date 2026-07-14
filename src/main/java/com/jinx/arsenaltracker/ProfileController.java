@@ -115,4 +115,21 @@ public class ProfileController {
 
         return ResponseEntity.ok(Map.of("message", "Account deleted successfully"));
     }
+
+    @GetMapping("/public/{displayName}")
+    public ResponseEntity<?> getPublicProfile(@PathVariable String displayName) {
+        User user = userRepository.findByDisplayName(displayName).orElse(null);
+
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "User not found"));
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "displayName", user.getDisplayName() != null ? user.getDisplayName() : "",
+                "bio", user.getBio() != null ? user.getBio() : "",
+                "profilePicture", user.getProfilePicture() != null ? user.getProfilePicture() : "",
+                "initials", user.getInitials() != null ? user.getInitials() : ""
+        ));
+    }
 }

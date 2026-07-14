@@ -506,6 +506,8 @@ function FixturesPage() {
 
 function LeaderboardPage() {
     const [standings, setStandings] = useState([])
+    const [selectedProfile, setSelectedProfile] = useState(null)
+    const [loadingProfile, setLoadingProfile] = useState(false)
 
     useEffect(() => {
         async function load() {
@@ -517,6 +519,30 @@ function LeaderboardPage() {
         }
         load()
     }, [])
+
+    async function handleUserClick(displayName) {
+        setLoadingProfile(true)
+        const response = await fetch(`${API_BASE}/profile/public/${displayName}`, {
+            headers: authHeaders()
+        })
+        if (response.ok) {
+            const data = await response.json()
+            setSelectedProfile(data)
+        }
+        setLoadingProfile(false)
+    }
+
+    function closeModal() {
+        setSelectedProfile(null)
+    }
+
+    function getAvatarContent(profile) {
+        if (profile.profilePicture) {
+            return <img src={profile.profilePicture} alt="avatar" style={styles.avatarPreviewImg} />
+        }
+        const display = profile.initials || profile.displayName?.substring(0, 2) || '?'
+        return <span style={{ fontSize: '1.5rem' }}>{display.toUpperCase()}</span>
+    }
 
     return (
         <div style={styles.mainContent}>
@@ -532,9 +558,12 @@ function LeaderboardPage() {
                     </thead>
                     <tbody>
                         {standings.map((entry, index) => (
-                            <tr key={entry.email}>
+                            <tr key={entry.displayName} style={{ cursor: 'pointer' }}
+                                onClick={() => handleUserClick(entry.displayName)}>
                                 <td style={styles.td}>{index + 1}</td>
-                                <td style={styles.td}>{entry.email}</td>
+                                <td style={{ ...styles.td, color: '#db0007', textDecoration: 'underline' }}>
+                                    {entry.displayName}
+                                </td>
                                 <td style={styles.td}>{entry.totalPoints}</td>
                             </tr>
                         ))}
@@ -542,6 +571,31 @@ function LeaderboardPage() {
                 </table>
                 {standings.length === 0 && <p style={{ marginTop: '16px' }}>No standings yet.</p>}
             </section>
+
+            {selectedProfile && (
+                <div style={styles.modalOverlay} onClick={closeModal}>
+                    <div style={styles.modalBox} onClick={e => e.stopPropagation()}>
+                        <div style={styles.avatarPreview}>
+                            {getAvatarContent(selectedProfile)}
+                        </div>
+                        <h3 style={{ color: '#ffffff', fontSize: '1.2rem' }}>
+                            {selectedProfile.displayName || 'Unknown'}
+                        </h3>
+                        {selectedProfile.bio ? (
+                            <p style={styles.cardDetail}>{selectedProfile.bio}</p>
+                        ) : (
+                            <p style={{ ...styles.cardDetail, fontStyle: 'italic' }}>No bio yet.</p>
+                        )}
+                        <button style={styles.primaryButton} onClick={closeModal}>Close</button>
+                    </div>
+                </div>
+            )}
+
+            {loadingProfile && (
+                <div style={styles.modalOverlay}>
+                    <p style={{ color: '#ffffff' }}>Loading...</p>
+                </div>
+            )}
         </div>
     )
 }
@@ -1208,5 +1262,29 @@ const styles = {
         cursor: 'pointer',
         fontSize: '0.9rem',
         textAlign: 'center',
+    },
+    modalOverlay: {
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        backgroundColor: 'rgba(0,0,0,0.7)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000,
+    },
+    modalBox: {
+        backgroundColor: '#1a1a1a',
+        borderRadius: '8px',
+        padding: '32px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '16px',
+        width: '100%',
+        maxWidth: '340px',
+        border: '1px solid #2a2a2a',
     },
 }

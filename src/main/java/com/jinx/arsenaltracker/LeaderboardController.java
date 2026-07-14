@@ -20,7 +20,7 @@ public class LeaderboardController {
 
         return results.stream()
                 .map(row -> Map.of(
-                        "email", row[0],
+                        "displayName", row[0],
                         "totalPoints", row[1]
                 ))
                 .collect(Collectors.toList());
