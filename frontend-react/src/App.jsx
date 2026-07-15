@@ -234,6 +234,7 @@ function AppHeader({ onLogout }) {
                 <NavLink to="/" end style={navLinkStyle}>Predictions</NavLink>
                 <NavLink to="/fixtures" style={navLinkStyle}>Fixtures</NavLink>
                 <NavLink to="/leaderboard" style={navLinkStyle}>Leaderboard</NavLink>
+                <NavLink to="/stats" style={navLinkStyle}>Stats</NavLink>
             </nav>
         </>
     )
@@ -908,6 +909,208 @@ function ProfilePage() {
     )
 }
 
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+
+function StatsPage() {
+    const [stats, setStats] = useState(null)
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState('')
+
+    useEffect(() => {
+        async function load() {
+            const response = await fetch(`${API_BASE}/stats`, {
+                headers: authHeaders()
+            })
+            if (response.ok) {
+                const data = await response.json()
+                setStats(data)
+            } else {
+                setError('Failed to load stats.')
+            }
+            setLoading(false)
+        }
+        load()
+    }, [])
+
+    if (loading) return <div style={styles.mainContent}><p style={styles.cardDetail}>Loading stats...</p></div>
+    if (error) return <div style={styles.mainContent}><p style={styles.errorText}>{error}</p></div>
+    if (!stats) return null
+
+    const { total, home, away, season } = stats
+
+    const formPills = total.form
+        ? total.form.split(',').map((r, i) => (
+            <span key={i} style={{
+                ...styles.formPill,
+                backgroundColor: r === 'W' ? '#2d7a2d' : r === 'D' ? '#555555' : '#7a2d2d'
+            }}>
+                {r}
+            </span>
+        ))
+        : <span style={styles.cardDetail}>No form data yet</span>
+
+    const barData = [
+        { name: 'Goals Scored', value: total.goalsFor, fill: '#db0007' },
+        { name: 'Goals Conceded', value: total.goalsAgainst, fill: '#444444' },
+        { name: 'Goal Difference', value: total.goalDifference, fill: '#9b0005' },
+    ]
+
+    const recordData = [
+        { name: 'Wins', Total: total.won, Home: home.won, Away: away.won },
+        { name: 'Draws', Total: total.draw, Home: home.draw, Away: away.draw },
+        { name: 'Losses', Total: total.lost, Home: home.lost, Away: away.lost },
+    ]
+
+    const pointsData = [
+        { name: 'Home', points: home.points },
+        { name: 'Away', points: away.points },
+        { name: 'Total', points: total.points },
+    ]
+
+    return (
+        <div style={styles.mainContent}>
+            <section>
+                <h2 style={styles.sectionTitle}>Season {season} — Overview</h2>
+                <div style={styles.statsGrid}>
+                    <div style={styles.statCard}>
+                        <span style={styles.statValue}>{total.position}</span>
+                        <span style={styles.statLabel}>League Position</span>
+                    </div>
+                    <div style={styles.statCard}>
+                        <span style={styles.statValue}>{total.points}</span>
+                        <span style={styles.statLabel}>Points</span>
+                    </div>
+                    <div style={styles.statCard}>
+                        <span style={styles.statValue}>{total.playedGames}</span>
+                        <span style={styles.statLabel}>Played</span>
+                    </div>
+                    <div style={styles.statCard}>
+                        <span style={styles.statValue}>{total.won}</span>
+                        <span style={styles.statLabel}>Wins</span>
+                    </div>
+                    <div style={styles.statCard}>
+                        <span style={styles.statValue}>{total.draw}</span>
+                        <span style={styles.statLabel}>Draws</span>
+                    </div>
+                    <div style={styles.statCard}>
+                        <span style={styles.statValue}>{total.lost}</span>
+                        <span style={styles.statLabel}>Losses</span>
+                    </div>
+                    <div style={styles.statCard}>
+                        <span style={styles.statValue}>{total.goalsFor}</span>
+                        <span style={styles.statLabel}>Goals Scored</span>
+                    </div>
+                    <div style={styles.statCard}>
+                        <span style={styles.statValue}>{total.goalsAgainst}</span>
+                        <span style={styles.statLabel}>Goals Conceded</span>
+                    </div>
+                    <div style={styles.statCard}>
+                        <span style={styles.statValue}>+{total.goalDifference}</span>
+                        <span style={styles.statLabel}>Goal Difference</span>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2 style={styles.sectionTitle}>Recent Form</h2>
+                <div style={styles.card}>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        {formPills}
+                    </div>
+                    <span style={{ ...styles.cardDetail, marginTop: '8px' }}>Last 5 Premier League matches</span>
+                </div>
+            </section>
+
+            <section>
+                <h2 style={styles.sectionTitle}>Home vs Away</h2>
+                <div style={styles.homeAwayGrid}>
+                    <div style={styles.homeAwayCard}>
+                        <h3 style={styles.homeAwayTitle}>🏠 Home</h3>
+                        <div style={styles.homeAwayStat}><span style={styles.statValue}>{home.won}</span><span style={styles.cardDetail}>Wins</span></div>
+                        <div style={styles.homeAwayStat}><span style={styles.statValue}>{home.draw}</span><span style={styles.cardDetail}>Draws</span></div>
+                        <div style={styles.homeAwayStat}><span style={styles.statValue}>{home.lost}</span><span style={styles.cardDetail}>Losses</span></div>
+                        <div style={styles.homeAwayStat}><span style={styles.statValue}>{home.goalsFor}</span><span style={styles.cardDetail}>Goals Scored</span></div>
+                        <div style={styles.homeAwayStat}><span style={styles.statValue}>{home.goalsAgainst}</span><span style={styles.cardDetail}>Goals Conceded</span></div>
+                        <div style={styles.homeAwayStat}><span style={styles.statValue}>{home.points}</span><span style={styles.cardDetail}>Points</span></div>
+                    </div>
+                    <div style={styles.homeAwayCard}>
+                        <h3 style={styles.homeAwayTitle}>✈️ Away</h3>
+                        <div style={styles.homeAwayStat}><span style={styles.statValue}>{away.won}</span><span style={styles.cardDetail}>Wins</span></div>
+                        <div style={styles.homeAwayStat}><span style={styles.statValue}>{away.draw}</span><span style={styles.cardDetail}>Draws</span></div>
+                        <div style={styles.homeAwayStat}><span style={styles.statValue}>{away.lost}</span><span style={styles.cardDetail}>Losses</span></div>
+                        <div style={styles.homeAwayStat}><span style={styles.statValue}>{away.goalsFor}</span><span style={styles.cardDetail}>Goals Scored</span></div>
+                        <div style={styles.homeAwayStat}><span style={styles.statValue}>{away.goalsAgainst}</span><span style={styles.cardDetail}>Goals Conceded</span></div>
+                        <div style={styles.homeAwayStat}><span style={styles.statValue}>{away.points}</span><span style={styles.cardDetail}>Points</span></div>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2 style={styles.sectionTitle}>Goals Breakdown</h2>
+                <div style={styles.card}>
+                    <ResponsiveContainer width="100%" height={220}>
+                        <BarChart data={barData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
+                            <XAxis dataKey="name" tick={{ fill: '#aaaaaa', fontSize: 12 }} />
+                            <YAxis tick={{ fill: '#aaaaaa', fontSize: 12 }} />
+                            <Tooltip
+                                contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #444', color: '#fff' }}
+                            />
+                            <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                                {barData.map((entry, index) => (
+                                    <Cell key={index} fill={entry.fill} />
+                                ))}
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+            </section>
+
+            <section>
+                <h2 style={styles.sectionTitle}>Win / Draw / Loss Breakdown</h2>
+                <div style={styles.card}>
+                    <ResponsiveContainer width="100%" height={220}>
+                        <BarChart data={recordData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
+                            <XAxis dataKey="name" tick={{ fill: '#aaaaaa', fontSize: 12 }} />
+                            <YAxis tick={{ fill: '#aaaaaa', fontSize: 12 }} />
+                            <Tooltip
+                                contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #444', color: '#fff' }}
+                            />
+                            <Bar dataKey="Total" fill="#db0007" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="Home" fill="#9b0005" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="Away" fill="#444444" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+            </section>
+
+            <section>
+                <h2 style={styles.sectionTitle}>Points — Home vs Away</h2>
+                <div style={styles.card}>
+                    <ResponsiveContainer width="100%" height={220}>
+                        <LineChart data={pointsData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
+                            <XAxis dataKey="name" tick={{ fill: '#aaaaaa', fontSize: 12 }} />
+                            <YAxis tick={{ fill: '#aaaaaa', fontSize: 12 }} />
+                            <Tooltip
+                                contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #444', color: '#fff' }}
+                            />
+                            <Line
+                                type="monotone"
+                                dataKey="points"
+                                stroke="#db0007"
+                                strokeWidth={2}
+                                dot={{ fill: '#db0007', r: 5 }}
+                            />
+                        </LineChart>
+                    </ResponsiveContainer>
+                </div>
+            </section>
+        </div>
+    )
+}
+
 function MainApp({ onLogout }) {
     return (
         <BrowserRouter>
@@ -917,6 +1120,7 @@ function MainApp({ onLogout }) {
                 <Route path="/fixtures" element={<FixturesPage />} />
                 <Route path="/leaderboard" element={<LeaderboardPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/stats" element={<StatsPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
         </BrowserRouter>
@@ -1286,5 +1490,67 @@ const styles = {
         width: '100%',
         maxWidth: '340px',
         border: '1px solid #2a2a2a',
+    },
+    statsGrid: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: '12px',
+    },
+    statCard: {
+        backgroundColor: '#1a1a1a',
+        borderRadius: '6px',
+        padding: '16px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '6px',
+        border: '1px solid #2a2a2a',
+    },
+    statValue: {
+        fontSize: '1.8rem',
+        fontWeight: 'bold',
+        color: '#db0007',
+    },
+    statLabel: {
+        fontSize: '0.8rem',
+        color: '#aaaaaa',
+        textAlign: 'center',
+    },
+    formPill: {
+        width: '32px',
+        height: '32px',
+        borderRadius: '50%',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontWeight: 'bold',
+        fontSize: '0.85rem',
+        color: '#ffffff',
+    },
+    homeAwayGrid: {
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: '16px',
+    },
+    homeAwayCard: {
+        backgroundColor: '#1a1a1a',
+        borderRadius: '6px',
+        padding: '20px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px',
+        border: '1px solid #2a2a2a',
+    },
+    homeAwayTitle: {
+        color: '#ffffff',
+        fontSize: '1rem',
+        marginBottom: '4px',
+    },
+    homeAwayStat: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderBottom: '1px solid #2a2a2a',
+        paddingBottom: '8px',
     },
 }

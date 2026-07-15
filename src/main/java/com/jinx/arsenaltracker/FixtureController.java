@@ -18,6 +18,9 @@ public class FixtureController {
     @Autowired
     private ScoringService scoringService;
 
+    @Autowired
+    private StatsController statsController;
+
     @PostMapping
     public Fixture createFixture(@RequestBody Fixture fixture) {
         return fixtureRepository.save(fixture);
@@ -39,6 +42,7 @@ public class FixtureController {
         Fixture saved = fixtureRepository.save(fixture);
 
         scoringService.scoreFixture(saved);
+        statsController.invalidateCache();
 
         return saved;
     }
