@@ -176,7 +176,7 @@ function LoginPage({ onLoginSuccess }) {
     )
 }
 
-function AppHeader({ onLogout }) {
+function AppHeader({ onLogout, isAdmin }) {
     const [profile, setProfile] = useState({ displayName: '', initials: '', profilePicture: '' })
     const navigate = useNavigate()
 
@@ -235,6 +235,10 @@ function AppHeader({ onLogout }) {
                 <NavLink to="/fixtures" style={navLinkStyle}>Fixtures</NavLink>
                 <NavLink to="/leaderboard" style={navLinkStyle}>Leaderboard</NavLink>
                 <NavLink to="/stats" style={navLinkStyle}>Stats</NavLink>
+                <NavLink to="/squad" style={navLinkStyle}>Squad</NavLink>
+                {isAdmin && (
+                    <NavLink to="/admin" style={navLinkStyle}>⚙ Admin</NavLink>
+                )}
             </nav>
         </>
     )
@@ -243,24 +247,30 @@ function AppHeader({ onLogout }) {
 function PredictionsPage() {
     const [fixtures, setFixtures] = useState([])
     const [predictions, setPredictions] = useState([])
+    const [scoringRules, setScoringRules] = useState({ exactScorePoints: 3, correctOutcomePoints: 1 })
 
     useEffect(() => {
         loadFixtures()
         loadPredictions()
+        loadScoringRules()
     }, [])
 
+    async function loadScoringRules() {
+        const response = await fetch(`${API_BASE}/admin/scoring-rules`)
+        if (response.ok) {
+            const data = await response.json()
+            setScoringRules(data)
+        }
+    }
+
     async function loadFixtures() {
-        const response = await fetch(`${API_BASE}/fixtures`, {
-            headers: authHeaders()
-        })
+        const response = await fetch(`${API_BASE}/fixtures`, { headers: authHeaders() })
         const data = await response.json()
         setFixtures(data)
     }
 
     async function loadPredictions() {
-        const response = await fetch(`${API_BASE}/predictions`, {
-            headers: authHeaders()
-        })
+        const response = await fetch(`${API_BASE}/predictions`, { headers: authHeaders() })
         const data = await response.json()
         setPredictions(data)
     }
@@ -270,9 +280,7 @@ function PredictionsPage() {
             method: 'DELETE',
             headers: authHeaders()
         })
-        if (response.ok) {
-            loadPredictions()
-        }
+        if (response.ok) loadPredictions()
     }
 
     return (
@@ -282,13 +290,13 @@ function PredictionsPage() {
                 <div style={styles.rulesCard}>
                     <div style={styles.rulesGrid}>
                         <div style={styles.ruleItem}>
-                            <span style={styles.rulePoints}>3 pts</span>
+                            <span style={styles.rulePoints}>{scoringRules.exactScorePoints} pts</span>
                             <span style={styles.ruleLabel}>Exact score</span>
                             <span style={styles.ruleExample}>e.g. You predict 2-1, Arsenal win 2-1</span>
                         </div>
                         <div style={styles.ruleDivider} />
                         <div style={styles.ruleItem}>
-                            <span style={styles.rulePoints}>1 pt</span>
+                            <span style={styles.rulePoints}>{scoringRules.correctOutcomePoints} pt</span>
                             <span style={styles.ruleLabel}>Correct outcome</span>
                             <span style={styles.ruleExample}>e.g. You predict 2-1, Arsenal win 3-0</span>
                         </div>
@@ -1111,16 +1119,448 @@ function StatsPage() {
     )
 }
 
-function MainApp({ onLogout }) {
+function SquadPage() {
+    const [squad, setSquad] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState('')
+    const [filter, setFilter] = useState('All')
+    const [search, setSearch] = useState('')
+
+    const positionGroups = ['All', 'Manager', 'Goalkeeper', 'Defender', 'Midfielder', 'Attacker']
+
+    useEffect(() => {
+        async function load() {
+            const response = await fetch(`${API_BASE}/squad`, {
+                headers: authHeaders()
+            })
+            if (response.ok) {
+                const data = await response.json()
+                setSquad(data)
+            } else {
+                setError('Failed to load squad.')
+            }
+            setLoading(false)
+        }
+        load()
+    }, [])
+
+    function getPositionGroup(position) {
+        return position
+    }
+
+    const filtered = squad.filter(player => {
+        const matchesFilter = filter === 'All' || getPositionGroup(player.position) === filter
+        const matchesSearch = player.name.toLowerCase().includes(search.toLowerCase())
+        return matchesFilter && matchesSearch
+    })
+
+    if (loading) return <div style={styles.mainContent}><p style={styles.cardDetail}>Loading squad...</p></div>
+    if (error) return <div style={styles.mainContent}><p style={styles.errorText}>{error}</p></div>
+
+    return (
+        <div style={styles.mainContent}>
+            <section>
+                <h2 style={styles.sectionTitle}>Arsenal Squad 2025/26</h2>
+
+                <div style={styles.squadFilters}>
+                    <input
+                        style={{ ...styles.input, maxWidth: '200px' }}
+                        type="text"
+                        placeholder="Search player..."
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                    />
+                    <div style={styles.filterButtons}>
+                        {positionGroups.map(group => (
+                            <button
+                                key={group}
+                                style={{
+                                    ...styles.filterButton,
+                                    backgroundColor: filter === group ? '#db0007' : 'transparent',
+                                    color: filter === group ? '#ffffff' : '#aaaaaa',
+                                    border: filter === group ? '1px solid #db0007' : '1px solid #444444',
+                                }}
+                                onClick={() => setFilter(group)}
+                            >
+                                {group}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {filtered.length === 0 && (
+                    <p style={styles.cardDetail}>No players found.</p>
+                )}
+
+                <div style={styles.squadGrid}>
+                    {filtered.map(player => (
+                        <div key={player.name} style={styles.playerCard}>
+                            <div style={styles.playerPhotoWrapper}>
+                                {player.photo ? (
+                                    <img
+                                        src={player.photo}
+                                        alt={player.name}
+                                        style={styles.playerPhoto}
+                                        onError={e => { e.target.style.display = 'none' }}
+                                    />
+                                ) : (
+                                    <div style={styles.playerPhotoPlaceholder}>
+                                        {player.name.substring(0, 2).toUpperCase()}
+                                    </div>
+                                )}
+                                {player.number && (
+                                    <span style={styles.playerNumber}>#{player.number}</span>
+                                )}
+                            </div>
+                            <div style={styles.playerInfo}>
+                                <strong style={styles.playerName}>{player.name}</strong>
+                                <span style={styles.playerPosition}>{player.position}</span>
+                                {player.height && (
+                                    <span style={styles.cardDetail}>📏 {player.height}</span>
+                                )}
+                                {player.dateOfBirth && (
+                                    <span style={styles.cardDetail}>
+                                        🎂 {new Date(player.dateOfBirth).toLocaleDateString('en-GB', {
+                                            day: 'numeric', month: 'short', year: 'numeric'
+                                        })}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </section>
+        </div>
+    )
+}
+
+function AdminPage() {
+    const [configs, setConfigs] = useState([])
+    const [users, setUsers] = useState([])
+    const [editingConfig, setEditingConfig] = useState({})
+    const [configMessage, setConfigMessage] = useState('')
+    const [userMessage, setUserMessage] = useState('')
+    const [announcement, setAnnouncement] = useState('')
+    const [syncMessage, setSyncMessage] = useState('')
+    const [announcementMessage, setAnnouncementMessage] = useState('')
+
+    useEffect(() => {
+        loadConfigs()
+        loadUsers()
+    }, [])
+
+    async function loadConfigs() {
+        const response = await fetch(`${API_BASE}/admin/configs`, {
+            headers: authHeaders()
+        })
+        if (response.ok) {
+            const data = await response.json()
+            setConfigs(data)
+            const ann = data.find(c => c.configKey === 'app_announcement')
+            if (ann) setAnnouncement(ann.configValue)
+            const editing = {}
+            data.forEach(c => { editing[c.configKey] = c.configValue })
+            setEditingConfig(editing)
+        }
+    }
+
+    async function loadUsers() {
+        const response = await fetch(`${API_BASE}/admin/users`, {
+            headers: authHeaders()
+        })
+        if (response.ok) {
+            const data = await response.json()
+            setUsers(data)
+        }
+    }
+
+    async function saveConfig(key) {
+        const response = await fetch(`${API_BASE}/admin/configs/${key}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', ...authHeaders() },
+            body: JSON.stringify({ value: editingConfig[key] })
+        })
+        if (response.ok) {
+            setConfigMessage(`✓ ${key} updated successfully`)
+            loadConfigs()
+            setTimeout(() => setConfigMessage(''), 3000)
+        }
+    }
+
+    async function triggerSync() {
+        setSyncMessage('Syncing...')
+        const response = await fetch(`${API_BASE}/admin/sync`, {
+            method: 'POST',
+            headers: authHeaders()
+        })
+        if (response.ok) {
+            setSyncMessage('✓ Sync completed successfully')
+        } else {
+            setSyncMessage('✗ Sync failed')
+        }
+        setTimeout(() => setSyncMessage(''), 4000)
+    }
+
+    async function promoteUser(id) {
+        const response = await fetch(`${API_BASE}/admin/users/${id}/promote`, {
+            method: 'PUT',
+            headers: authHeaders()
+        })
+        if (response.ok) {
+            setUserMessage('✓ User promoted to admin')
+            loadUsers()
+            setTimeout(() => setUserMessage(''), 3000)
+        }
+    }
+
+    async function banUser(id) {
+        const response = await fetch(`${API_BASE}/admin/users/${id}/ban`, {
+            method: 'PUT',
+            headers: authHeaders()
+        })
+        if (response.ok) {
+            setUserMessage('✓ User banned')
+            loadUsers()
+            setTimeout(() => setUserMessage(''), 3000)
+        }
+    }
+
+    async function unbanUser(id) {
+        const response = await fetch(`${API_BASE}/admin/users/${id}/unban`, {
+            method: 'PUT',
+            headers: authHeaders()
+        })
+        if (response.ok) {
+            setUserMessage('✓ User unbanned')
+            loadUsers()
+            setTimeout(() => setUserMessage(''), 3000)
+        }
+    }
+
+    const nonAnnouncementConfigs = configs.filter(c => c.configKey !== 'app_announcement')
+
+    return (
+        <div style={styles.mainContent}>
+            <section>
+                <h2 style={styles.sectionTitle}>⚙ App Settings</h2>
+                <div style={styles.form}>
+                    {nonAnnouncementConfigs.map(config => (
+                        <div key={config.configKey} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <label style={styles.cardDetail}>
+                                {config.configKey} — <span style={{ color: '#777' }}>{config.description}</span>
+                            </label>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <input
+                                    style={{ ...styles.input, flex: 1 }}
+                                    value={editingConfig[config.configKey] || ''}
+                                    onChange={e => setEditingConfig(prev => ({
+                                        ...prev,
+                                        [config.configKey]: e.target.value
+                                    }))}
+                                />
+                                <button
+                                    style={styles.primaryButton}
+                                    onClick={() => saveConfig(config.configKey)}
+                                >
+                                    Save
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                    {configMessage && <p style={{ color: '#66cc66', fontSize: '0.9rem' }}>{configMessage}</p>}
+                </div>
+            </section>
+
+            <section>
+                <h2 style={styles.sectionTitle}>📢 Announcement Banner</h2>
+                <div style={styles.form}>
+                    <p style={styles.cardDetail}>Shown to all users at the top of the app. Leave empty to hide.</p>
+                    <textarea
+                        style={{ ...styles.input, minHeight: '60px', resize: 'vertical', fontFamily: 'Arial' }}
+                        placeholder="Type an announcement..."
+                        value={announcement}
+                        onChange={e => setAnnouncement(e.target.value)}
+                    />
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                            style={styles.primaryButton}
+                            onClick={async () => {
+                                const response = await fetch(`${API_BASE}/admin/configs/app_announcement`, {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+                                    body: JSON.stringify({ value: announcement })
+                                })
+                                if (response.ok) {
+                                    setAnnouncementMessage('✓ Announcement saved')
+                                    setTimeout(() => setAnnouncementMessage(''), 3000)
+                                }
+                            }}
+                        >
+                            Save Announcement
+                        </button>
+                        <button
+                            style={{ ...styles.primaryButton, backgroundColor: 'transparent', color: '#ff6666', border: '1px solid #ff6666' }}
+                            onClick={async () => {
+                                const response = await fetch(`${API_BASE}/admin/configs/app_announcement`, {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+                                    body: JSON.stringify({ value: '' })
+                                })
+                                if (response.ok) {
+                                    setAnnouncement('')
+                                    setAnnouncementMessage('✓ Announcement cleared')
+                                    setTimeout(() => setAnnouncementMessage(''), 3000)
+                                }
+                            }}
+                        >
+                            Clear
+                        </button>
+                    </div>
+                    {announcementMessage && <p style={{ color: '#66cc66', fontSize: '0.9rem' }}>{announcementMessage}</p>}
+                </div>
+            </section>
+
+            <section>
+                <h2 style={styles.sectionTitle}>🔄 Data Sync</h2>
+                <div style={styles.form}>
+                    <p style={styles.cardDetail}>Manually trigger a fixture sync from the football API.</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <button style={styles.primaryButton} onClick={triggerSync}>
+                            Trigger Sync Now
+                        </button>
+                        {syncMessage && <p style={{ color: '#66cc66', fontSize: '0.9rem' }}>{syncMessage}</p>}
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2 style={styles.sectionTitle}>👥 User Management</h2>
+                {userMessage && <p style={{ color: '#66cc66', fontSize: '0.9rem', marginBottom: '12px' }}>{userMessage}</p>}
+                <table style={styles.table}>
+                    <thead>
+                        <tr>
+                            <th style={styles.th}>Username</th>
+                            <th style={styles.th}>Email</th>
+                            <th style={styles.th}>Role</th>
+                            <th style={styles.th}>Status</th>
+                            <th style={styles.th}>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {users.map(user => (
+                            <tr key={user.id}>
+                                <td style={styles.td}>{user.displayName || '—'}</td>
+                                <td style={styles.td}>{user.email}</td>
+                                <td style={styles.td}>
+                                    <span style={{
+                                        color: user.isAdmin ? '#db0007' : '#aaaaaa',
+                                        fontWeight: user.isAdmin ? 'bold' : 'normal'
+                                    }}>
+                                        {user.isAdmin ? '⚙ Admin' : 'User'}
+                                    </span>
+                                </td>
+                                <td style={styles.td}>
+                                    <span style={{ color: user.isBanned ? '#ff4444' : '#66cc66' }}>
+                                        {user.isBanned ? '🚫 Banned' : '✓ Active'}
+                                    </span>
+                                </td>
+                                <td style={styles.td}>
+                                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                        {!user.isAdmin && (
+                                            <button
+                                                style={styles.adminActionButton}
+                                                onClick={() => promoteUser(user.id)}
+                                            >
+                                                Promote
+                                            </button>
+                                        )}
+                                        {!user.isBanned ? (
+                                            <button
+                                                style={{ ...styles.adminActionButton, color: '#ff4444', borderColor: '#ff4444' }}
+                                                onClick={() => banUser(user.id)}
+                                            >
+                                                Ban
+                                            </button>
+                                        ) : (
+                                            <button
+                                                style={{ ...styles.adminActionButton, color: '#66cc66', borderColor: '#66cc66' }}
+                                                onClick={() => unbanUser(user.id)}
+                                            >
+                                                Unban
+                                            </button>
+                                        )}
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </section>
+        </div>
+    )
+}
+
+function AnnouncementBanner() {
+    const [message, setMessage] = useState('')
+
+    useEffect(() => {
+        async function load() {
+            const response = await fetch(`${API_BASE}/admin/announcement`)
+            if (response.ok) {
+                const data = await response.json()
+                if (data.message) setMessage(data.message)
+            }
+        }
+        load()
+    }, [])
+
+    if (!message) return null
+
+    return (
+        <div style={{
+            backgroundColor: '#6b0000',
+            borderTop: '1px solid #db0007',
+            borderBottom: '1px solid #db0007',
+            padding: '8px 0',
+            overflow: 'hidden',
+            whiteSpace: 'nowrap',
+        }}>
+            <style>{`
+                @keyframes ticker {
+                    0% { transform: translateX(100vw); }
+                    100% { transform: translateX(-100%); }
+                }
+                .ticker-text {
+                    display: inline-block;
+                    animation: ticker 20s linear infinite;
+                    color: #ffffff;
+                    font-size: 0.9rem;
+                    padding-right: 80px;
+                }
+                .ticker-text:hover {
+                    animation-play-state: paused;
+                }
+            `}</style>
+            <span className="ticker-text">
+                📢 {message}
+            </span>
+        </div>
+    )
+}
+
+function MainApp({ onLogout, isAdmin }) {
     return (
         <BrowserRouter>
-            <AppHeader onLogout={onLogout} />
+            <AppHeader onLogout={onLogout} isAdmin={isAdmin} />
+            <AnnouncementBanner />
             <Routes>
                 <Route path="/" element={<PredictionsPage />} />
                 <Route path="/fixtures" element={<FixturesPage />} />
                 <Route path="/leaderboard" element={<LeaderboardPage />} />
-                <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/stats" element={<StatsPage />} />
+                <Route path="/squad" element={<SquadPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
+                {isAdmin && <Route path="/admin" element={<AdminPage />} />}
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
         </BrowserRouter>
@@ -1129,6 +1569,23 @@ function MainApp({ onLogout }) {
 
 export default function App() {
     const [isLoggedIn, setIsLoggedIn] = useState(!!getToken())
+    const [isAdmin, setIsAdmin] = useState(false)
+
+    useEffect(() => {
+        if (isLoggedIn) {
+            checkAdminStatus()
+        }
+    }, [isLoggedIn])
+
+    async function checkAdminStatus() {
+        const response = await fetch(`${API_BASE}/profile`, {
+            headers: authHeaders()
+        })
+        if (response.ok) {
+            const data = await response.json()
+            setIsAdmin(data.isAdmin === true)
+        }
+    }
 
     function handleLoginSuccess() {
         setIsLoggedIn(true)
@@ -1137,13 +1594,14 @@ export default function App() {
     function handleLogout() {
         localStorage.removeItem('token')
         setIsLoggedIn(false)
+        setIsAdmin(false)
     }
 
     if (!isLoggedIn) {
         return <LoginPage onLoginSuccess={handleLoginSuccess} />
     }
 
-    return <MainApp onLogout={handleLogout} />
+    return <MainApp onLogout={handleLogout} isAdmin={isAdmin} />
 }
 
 const styles = {
@@ -1552,5 +2010,100 @@ const styles = {
         alignItems: 'center',
         borderBottom: '1px solid #2a2a2a',
         paddingBottom: '8px',
+    },
+    squadFilters: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '16px',
+        marginBottom: '24px',
+        flexWrap: 'wrap',
+    },
+    filterButtons: {
+        display: 'flex',
+        gap: '8px',
+        flexWrap: 'wrap',
+    },
+    filterButton: {
+        padding: '6px 14px',
+        borderRadius: '20px',
+        cursor: 'pointer',
+        fontSize: '0.85rem',
+        fontWeight: '500',
+        transition: 'all 0.2s',
+    },
+    squadGrid: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+        gap: '16px',
+    },
+    playerCard: {
+        backgroundColor: '#1a1a1a',
+        borderRadius: '8px',
+        overflow: 'hidden',
+        border: '1px solid #2a2a2a',
+        display: 'flex',
+        flexDirection: 'column',
+    },
+    playerPhotoWrapper: {
+        position: 'relative',
+        backgroundColor: '#111111',
+        height: '180px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+    },
+    playerPhoto: {
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+    },
+    playerPhotoPlaceholder: {
+        width: '80px',
+        height: '80px',
+        borderRadius: '50%',
+        backgroundColor: '#db0007',
+        color: '#ffffff',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '1.5rem',
+        fontWeight: 'bold',
+    },
+    playerNumber: {
+        position: 'absolute',
+        top: '8px',
+        right: '8px',
+        backgroundColor: '#db0007',
+        color: '#ffffff',
+        fontSize: '0.75rem',
+        fontWeight: 'bold',
+        padding: '2px 6px',
+        borderRadius: '4px',
+    },
+    playerInfo: {
+        padding: '12px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '4px',
+    },
+    playerName: {
+        color: '#ffffff',
+        fontSize: '0.95rem',
+    },
+    playerPosition: {
+        color: '#db0007',
+        fontSize: '0.8rem',
+        fontWeight: '500',
+        marginBottom: '4px',
+    },
+    adminActionButton: {
+        padding: '4px 10px',
+        backgroundColor: 'transparent',
+        color: '#aaaaaa',
+        border: '1px solid #444444',
+        borderRadius: '4px',
+        cursor: 'pointer',
+        fontSize: '0.8rem',
     },
 }

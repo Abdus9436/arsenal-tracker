@@ -39,7 +39,8 @@ public class ProfileController {
                 "displayName", user.getDisplayName() != null ? user.getDisplayName() : "",
                 "bio", user.getBio() != null ? user.getBio() : "",
                 "profilePicture", user.getProfilePicture() != null ? user.getProfilePicture() : "",
-                "initials", user.getInitials() != null ? user.getInitials() : ""
+                "initials", user.getInitials() != null ? user.getInitials() : "",
+                "isAdmin", Boolean.TRUE.equals(user.getIsAdmin())
         ));
     }
 

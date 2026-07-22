@@ -36,6 +36,9 @@ public class FootballApiService {
     @Autowired
     private ScoringService scoringService;
 
+    @Autowired
+    private AppConfigService appConfigService;
+
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -60,8 +63,12 @@ public class FootballApiService {
 
     public void fetchAndSync() {
         try {
-            fetchSeason(API_URL_2025);
-            fetchSeason(API_URL_2026);
+            String season = appConfigService.get("current_season", "2025");
+            String baseUrl = appConfigService.get("fixture_api_url",
+                    "https://api.football-data.org/v4/teams/57/matches?season=");
+
+            fetchSeason(baseUrl + season);
+            fetchSeason(baseUrl + (Integer.parseInt(season) + 1));
             System.out.println("Fixtures synced successfully.");
         } catch (Exception e) {
             System.err.println("Failed to sync fixtures: " + e.getMessage());

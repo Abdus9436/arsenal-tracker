@@ -21,6 +21,8 @@ public class User {
 
     @Column(length = 2)
     private String initials;
+    private Boolean isAdmin = false;
+    private Boolean isBanned = false;
 
 
     public User() {
@@ -80,5 +82,21 @@ public class User {
 
     public void setInitials(String initials) {
         this.initials = initials;
+    }
+
+    public Boolean getIsAdmin() {
+        return isAdmin;
+    }
+
+    public void setIsAdmin(Boolean isAdmin) {
+        this.isAdmin = isAdmin;
+    }
+
+    public Boolean getIsBanned() {
+        return isBanned;
+    }
+
+    public void setIsBanned(Boolean isBanned) {
+        this.isBanned = isBanned;
     }
 }

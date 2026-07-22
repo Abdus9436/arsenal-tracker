@@ -11,6 +11,9 @@ public class ScoringService {
     @Autowired
     private PredictionRepository predictionRepository;
 
+    @Autowired
+    private AppConfigService appConfigService;
+
     public void scoreFixture(Fixture fixture) {
         List<Prediction> predictions = predictionRepository.findByFixture(fixture);
 
@@ -29,14 +32,14 @@ public class ScoringService {
 
         boolean exactMatch = (predHome == actualHome) && (predAway == actualAway);
         if (exactMatch) {
-            return 3;
+            return appConfigService.getInt("exact_score_points", 3);
         }
 
         String predictedOutcome = getOutcome(predHome, predAway);
         String actualOutcome = getOutcome(actualHome, actualAway);
 
         if (predictedOutcome.equals(actualOutcome)) {
-            return 1;
+            return appConfigService.getInt("correct_outcome_points", 1);
         }
 
         return 0;
