@@ -9,8 +9,12 @@
       (function() {
         var redirect = sessionStorage.redirect;
         delete sessionStorage.redirect;
-        if (redirect && redirect !== location.href) {
-          history.replaceState(null, null, redirect);
+        if (redirect) {
+          var url = new URL(redirect);
+          var path = url.pathname.replace('/arsenal-tracker', '') + url.search + url.hash;
+          if (path && path !== '/') {
+            window.history.replaceState(null, null, '/arsenal-tracker' + path);
+          }
         }
       })();
     </script>
