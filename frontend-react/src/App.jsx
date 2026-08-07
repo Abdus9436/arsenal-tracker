@@ -1160,7 +1160,7 @@ function SquadPage() {
     return (
         <div style={styles.mainContent}>
             <section>
-                <h2 style={styles.sectionTitle}>Arsenal Squad 2025/26</h2>
+                <h2 style={styles.sectionTitle}>Arsenal Squad 2026/27</h2>
 
                 <div style={styles.squadFilters}>
                     <input
@@ -1218,12 +1218,8 @@ function SquadPage() {
                                 {player.height && (
                                     <span style={styles.cardDetail}>📏 {player.height}</span>
                                 )}
-                                {player.dateOfBirth && (
-                                    <span style={styles.cardDetail}>
-                                        🎂 {new Date(player.dateOfBirth).toLocaleDateString('en-GB', {
-                                            day: 'numeric', month: 'short', year: 'numeric'
-                                        })}
-                                    </span>
+                                {player.age && (
+                                    <span style={styles.cardDetail}>🎂 Age: {player.age}</span>
                                 )}
                             </div>
                         </div>
@@ -1243,10 +1239,18 @@ function AdminPage() {
     const [announcement, setAnnouncement] = useState('')
     const [syncMessage, setSyncMessage] = useState('')
     const [announcementMessage, setAnnouncementMessage] = useState('')
+    const [players, setPlayers] = useState([])
+    const [editingPlayer, setEditingPlayer] = useState(null)
+    const [newPlayer, setNewPlayer] = useState({
+        name: '', position: '', number: '', age: '', height: '', photo: ''
+    })
+    const [playerMessage, setPlayerMessage] = useState('')
+    const [showAddForm, setShowAddForm] = useState(false)
 
     useEffect(() => {
         loadConfigs()
         loadUsers()
+        loadPlayers()
     }, [])
 
     async function loadConfigs() {
@@ -1334,6 +1338,68 @@ function AdminPage() {
             setUserMessage('✓ User unbanned')
             loadUsers()
             setTimeout(() => setUserMessage(''), 3000)
+        }
+    }
+
+    async function loadPlayers() {
+        const response = await fetch(`${API_BASE}/players`, {
+            headers: authHeaders()
+        })
+        if (response.ok) {
+            const data = await response.json()
+            setPlayers(data)
+        }
+    }
+
+    async function addPlayer() {
+        if (!newPlayer.name || !newPlayer.position) {
+            setPlayerMessage('Name and position are required.')
+            return
+        }
+        const response = await fetch(`${API_BASE}/players`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...authHeaders() },
+            body: JSON.stringify({
+                ...newPlayer,
+                age: newPlayer.age ? Number(newPlayer.age) : null
+            })
+        })
+        if (response.ok) {
+            setPlayerMessage('✓ Player added')
+            setNewPlayer({ name: '', position: '', number: '', age: '', height: '', photo: '' })
+            setShowAddForm(false)
+            loadPlayers()
+            setTimeout(() => setPlayerMessage(''), 3000)
+        }
+    }
+
+    async function savePlayer(id) {
+        const response = await fetch(`${API_BASE}/players/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', ...authHeaders() },
+            body: JSON.stringify({
+                ...editingPlayer,
+                age: editingPlayer.age ? Number(editingPlayer.age) : null
+            })
+        })
+        if (response.ok) {
+            setPlayerMessage('✓ Player updated')
+            setEditingPlayer(null)
+            loadPlayers()
+            setTimeout(() => setPlayerMessage(''), 3000)
+        }
+    }
+
+    async function deletePlayer(id) {
+        if (!window.confirm('Delete this player?')) return
+        const response = await fetch(`${API_BASE}/players/${id}`, {
+            method: 'DELETE',
+            headers: authHeaders()
+        })
+        if (response.ok) {
+            setPlayerMessage('✓ Player deleted')
+            loadPlayers()
+            setTimeout(() => setPlayerMessage(''), 3000)
         }
     }
 
@@ -1496,6 +1562,163 @@ function AdminPage() {
                     </tbody>
                 </table>
             </section>
+
+            <section>
+                <h2 style={styles.sectionTitle}>👥 Squad Management</h2>
+                {playerMessage && <p style={{ color: '#66cc66', fontSize: '0.9rem', marginBottom: '12px' }}>{playerMessage}</p>}
+
+                <button
+                    style={{ ...styles.primaryButton, marginBottom: '16px' }}
+                    onClick={() => setShowAddForm(!showAddForm)}
+                >
+                    {showAddForm ? 'Cancel' : '+ Add Player'}
+                </button>
+
+                {showAddForm && (
+                    <div style={{ ...styles.form, marginBottom: '24px' }}>
+                        <h3 style={{ color: '#ffffff', fontSize: '1rem' }}>New Player</h3>
+                        {['name', 'position', 'number', 'age', 'height', 'photo'].map(field => (
+                            <div key={field} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <label style={styles.cardDetail}>{field.charAt(0).toUpperCase() + field.slice(1)}</label>
+                                <input
+                                    style={styles.input}
+                                    placeholder={field === 'position' ? 'Goalkeeper / Defender / Midfielder / Attacker' : field}
+                                    value={newPlayer[field]}
+                                    onChange={e => setNewPlayer(prev => ({ ...prev, [field]: e.target.value }))}
+                                />
+                            </div>
+                        ))}
+                        <button style={styles.primaryButton} onClick={addPlayer}>Save Player</button>
+                    </div>
+                )}
+
+                <table style={styles.table}>
+                    <thead>
+                        <tr>
+                            <th style={styles.th}>Photo</th>
+                            <th style={styles.th}>Name</th>
+                            <th style={styles.th}>Position</th>
+                            <th style={styles.th}>No.</th>
+                            <th style={styles.th}>Age</th>
+                            <th style={styles.th}>Height</th>
+                            <th style={styles.th}>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {players.map(player => (
+                            <tr key={player.id}>
+                                {editingPlayer?.id === player.id ? (
+                                    <>
+                                        <td style={styles.td}>
+                                            <input
+                                                style={{ ...styles.input, width: '120px', fontSize: '0.8rem' }}
+                                                value={editingPlayer.photo || ''}
+                                                placeholder="Photo URL"
+                                                onChange={e => setEditingPlayer(prev => ({ ...prev, photo: e.target.value }))}
+                                            />
+                                        </td>
+                                        <td style={styles.td}>
+                                            <input
+                                                style={{ ...styles.input, width: '120px' }}
+                                                value={editingPlayer.name || ''}
+                                                onChange={e => setEditingPlayer(prev => ({ ...prev, name: e.target.value }))}
+                                            />
+                                        </td>
+                                        <td style={styles.td}>
+                                            <input
+                                                style={{ ...styles.input, width: '100px' }}
+                                                value={editingPlayer.position || ''}
+                                                onChange={e => setEditingPlayer(prev => ({ ...prev, position: e.target.value }))}
+                                            />
+                                        </td>
+                                        <td style={styles.td}>
+                                            <input
+                                                style={{ ...styles.input, width: '50px' }}
+                                                value={editingPlayer.number || ''}
+                                                onChange={e => setEditingPlayer(prev => ({ ...prev, number: e.target.value }))}
+                                            />
+                                        </td>
+                                        <td style={styles.td}>
+                                            <input
+                                                style={{ ...styles.input, width: '50px' }}
+                                                value={editingPlayer.age || ''}
+                                                onChange={e => setEditingPlayer(prev => ({ ...prev, age: e.target.value }))}
+                                            />
+                                        </td>
+                                        <td style={styles.td}>
+                                            <input
+                                                style={{ ...styles.input, width: '80px' }}
+                                                value={editingPlayer.height || ''}
+                                                onChange={e => setEditingPlayer(prev => ({ ...prev, height: e.target.value }))}
+                                            />
+                                        </td>
+                                        <td style={styles.td}>
+                                            <div style={{ display: 'flex', gap: '6px' }}>
+                                                <button
+                                                    style={{ ...styles.adminActionButton, color: '#66cc66', borderColor: '#66cc66' }}
+                                                    onClick={() => savePlayer(player.id)}
+                                                >
+                                                    Save
+                                                </button>
+                                                <button
+                                                    style={styles.adminActionButton}
+                                                    onClick={() => setEditingPlayer(null)}
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </>
+                                ) : (
+                                    <>
+                                        <td style={styles.td}>
+                                            {player.photo ? (
+                                                <img
+                                                    src={player.photo}
+                                                    alt={player.name}
+                                                    style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }}
+                                                    onError={e => { e.target.style.display = 'none' }}
+                                                />
+                                            ) : (
+                                                <div style={{
+                                                    width: '40px', height: '40px', borderRadius: '50%',
+                                                    backgroundColor: '#db0007', display: 'flex',
+                                                    alignItems: 'center', justifyContent: 'center',
+                                                    color: '#fff', fontSize: '0.7rem', fontWeight: 'bold'
+                                                }}>
+                                                    {player.name?.substring(0, 2).toUpperCase()}
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td style={styles.td}>{player.name}</td>
+                                        <td style={styles.td}>{player.position}</td>
+                                        <td style={styles.td}>{player.number || '—'}</td>
+                                        <td style={styles.td}>{player.age || '—'}</td>
+                                        <td style={styles.td}>{player.height || '—'}</td>
+                                        <td style={styles.td}>
+                                            <div style={{ display: 'flex', gap: '6px' }}>
+                                                <button
+                                                    style={styles.adminActionButton}
+                                                    onClick={() => setEditingPlayer({ ...player })}
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    style={{ ...styles.adminActionButton, color: '#ff4444', borderColor: '#ff4444' }}
+                                                    onClick={() => deletePlayer(player.id)}
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </>
+                                )}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+                {players.length === 0 && <p style={{ ...styles.cardDetail, marginTop: '16px' }}>No players yet. Add your first player above.</p>}
+            </section>
         </div>
     )
 }
@@ -1550,7 +1773,7 @@ function AnnouncementBanner() {
 
 function MainApp({ onLogout, isAdmin }) {
     return (
-        <BrowserRouter>
+        <BrowserRouter basename="/arsenal-tracker">
             <AppHeader onLogout={onLogout} isAdmin={isAdmin} />
             <AnnouncementBanner />
             <Routes>
@@ -2057,6 +2280,7 @@ const styles = {
         width: '100%',
         height: '100%',
         objectFit: 'cover',
+        objectPosition: 'top',
     },
     playerPhotoPlaceholder: {
         width: '80px',

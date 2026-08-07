@@ -2,15 +2,19 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚽</text></svg>">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend-react</title>
+    <title>Arsenal Tracker</title>
     <script>
       (function() {
         var redirect = sessionStorage.redirect;
         delete sessionStorage.redirect;
-        if (redirect && redirect !== location.href) {
-          history.replaceState(null, null, redirect);
+        if (redirect) {
+          var url = new URL(redirect);
+          var path = url.pathname.replace('/arsenal-tracker', '') + url.search + url.hash;
+          if (path && path !== '/') {
+            window.history.replaceState(null, null, '/arsenal-tracker' + path);
+          }
         }
       })();
     </script>
