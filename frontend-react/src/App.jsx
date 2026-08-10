@@ -557,6 +557,7 @@ function LeaderboardPage() {
         <div style={styles.mainContent}>
             <section>
                 <h2 style={styles.sectionTitle}>Leaderboard</h2>
+                <div style={styles.tableWrapper}>
                 <table style={styles.table}>
                     <thead>
                         <tr>
@@ -578,6 +579,7 @@ function LeaderboardPage() {
                         ))}
                     </tbody>
                 </table>
+                </div>
                 {standings.length === 0 && <p style={{ marginTop: '16px' }}>No standings yet.</p>}
             </section>
 
@@ -1502,6 +1504,7 @@ function AdminPage() {
             <section>
                 <h2 style={styles.sectionTitle}>👥 User Management</h2>
                 {userMessage && <p style={{ color: '#66cc66', fontSize: '0.9rem', marginBottom: '12px' }}>{userMessage}</p>}
+                <div style={styles.tableWrapper}>
                 <table style={styles.table}>
                     <thead>
                         <tr>
@@ -1561,6 +1564,7 @@ function AdminPage() {
                         ))}
                     </tbody>
                 </table>
+                </div>
             </section>
 
             <section>
@@ -1592,6 +1596,7 @@ function AdminPage() {
                     </div>
                 )}
 
+                <div style={styles.tableWrapper}>
                 <table style={styles.table}>
                     <thead>
                         <tr>
@@ -1717,6 +1722,7 @@ function AdminPage() {
                         ))}
                     </tbody>
                 </table>
+                </div>
                 {players.length === 0 && <p style={{ ...styles.cardDetail, marginTop: '16px' }}>No players yet. Add your first player above.</p>}
             </section>
         </div>
@@ -1830,7 +1836,7 @@ export default function App() {
 const styles = {
     header: {
         backgroundColor: '#9b0005',
-        padding: '20px 40px',
+        padding: '16px 20px',
         borderBottom: '4px solid #ffffff',
         display: 'flex',
         alignItems: 'flex-start',
@@ -1846,11 +1852,13 @@ const styles = {
     },
     nav: {
         backgroundColor: '#111111',
-        padding: '0 40px',
+        padding: '0 20px',
         display: 'flex',
         alignItems: 'center',
-        gap: '8px',
+        gap: '4px',
         borderBottom: '1px solid #2a2a2a',
+        overflowX: 'auto',
+        whiteSpace: 'nowrap',
     },
     navLink: {
         padding: '14px 16px',
@@ -1864,6 +1872,11 @@ const styles = {
         justifyContent: 'center',
         alignItems: 'center',
         minHeight: 'calc(100vh - 100px)',
+        gap: '40px',
+        padding: '40px 20px',
+        maxWidth: '1000px',
+        margin: '0 auto',
+        flexWrap: 'wrap',
     },
     loginBox: {
         backgroundColor: '#1a1a1a',
@@ -1873,7 +1886,9 @@ const styles = {
         flexDirection: 'column',
         gap: '16px',
         width: '100%',
-        maxWidth: '400px',
+        maxWidth: '380px',
+        flexShrink: 0,
+        minWidth: '280px',
     },
     sectionTitle: {
         color: '#db0007',
@@ -1907,7 +1922,7 @@ const styles = {
     mainContent: {
         maxWidth: '800px',
         margin: '40px auto',
-        padding: '0 20px',
+        padding: '0 16px',
         display: 'flex',
         flexDirection: 'column',
         gap: '40px',
@@ -1965,16 +1980,18 @@ const styles = {
         justifyContent: 'center',
         alignItems: 'center',
         minHeight: 'calc(100vh - 100px)',
-        gap: '60px',
-        padding: '40px',
+        gap: '40px',
+        padding: '40px 20px',
         maxWidth: '1000px',
         margin: '0 auto',
+        flexWrap: 'wrap',
     },
     loginLeft: {
         flex: 1,
         display: 'flex',
         flexDirection: 'column',
         gap: '20px',
+        minWidth: '280px',
     },
     loginTagline: {
         fontSize: '1.8rem',
@@ -2005,6 +2022,7 @@ const styles = {
         width: '100%',
         maxWidth: '380px',
         flexShrink: 0,
+        minWidth: '280px',
     },
     passwordWrapper: {
         position: 'relative',
@@ -2174,7 +2192,7 @@ const styles = {
     },
     statsGrid: {
         display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
         gap: '12px',
     },
     statCard: {
@@ -2210,7 +2228,7 @@ const styles = {
     },
     homeAwayGrid: {
         display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
         gap: '16px',
     },
     homeAwayCard: {
@@ -2329,5 +2347,9 @@ const styles = {
         borderRadius: '4px',
         cursor: 'pointer',
         fontSize: '0.8rem',
+    },
+    tableWrapper: {
+        overflowX: 'auto',
+        width: '100%',
     },
 }

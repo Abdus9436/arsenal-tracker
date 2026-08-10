@@ -22,6 +22,9 @@ public class UserController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private AppConfigService appConfigService;
+
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request,
@@ -33,6 +36,12 @@ public class UserController {
                     .orElse("Validation error");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("error", errorMessage));
+        }
+
+        int maxUsers = appConfigService.getInt("max_users", 50);
+        if (userRepository.count() >= maxUsers) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Registration is currently closed. Maximum user limit reached."));
         }
 
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {

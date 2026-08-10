@@ -39,7 +39,7 @@ public class AppConfigService {
             appConfigRepository.save(new AppConfig("correct_outcome_points", "1", "Points awarded for correct outcome prediction"));
             appConfigRepository.save(new AppConfig("app_announcement", "", "Banner message shown to all users (empty = no banner)"));
             appConfigRepository.save(new AppConfig("fixture_api_url", "https://api.football-data.org/v4/teams/57/matches?season=", "Base URL for fixture sync API"));
-            appConfigRepository.save(new AppConfig("squad_api_url", "https://v3.football.api-sports.io/players/squads?team=42", "Squad API URL"));
+            appConfigRepository.save(new AppConfig("max_users", "50", "Maximum number of registered users allowed"));
         }
     }
 }
