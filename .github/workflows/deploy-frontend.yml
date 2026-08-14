@@ -1,0 +1,32 @@
+name: Deploy Frontend to Netlify
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend-react/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: frontend-react
+        run: npm install
+
+      - name: Build
+        working-directory: frontend-react
+        run: npm run build
+        env:
+          VITE_API_URL: https://arsenal-tracker-backend.onrender.com/api
+
+      - name: Deploy to Netlify
+        working-directory: frontend-react
+        run: npx netlify deploy --prod --dir=dist --site=${{ secrets.NETLIFY_SITE_ID }} --auth=${{ secrets.NETLIFY_AUTH_TOKEN }}
