@@ -115,9 +115,9 @@ public class AdminController {
     public ResponseEntity<?> triggerSync() {
         if (!Boolean.TRUE.equals(getCurrentUser().getIsAdmin())) return unauthorized();
         footballApiService.fetchAndSync();
-        statsController.invalidateCache();
+        statsController.refreshStats();
         squadController.invalidateCache();
-        return ResponseEntity.ok(Map.of("message", "Fixtures synced, stats and squad cache cleared"));
+        return ResponseEntity.ok(Map.of("message", "Fixtures synced, stats refreshed, squad cache cleared"));
     }
 
     @GetMapping("/announcement")

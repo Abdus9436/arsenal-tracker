@@ -2,18 +2,13 @@ package com.jinx.arsenaltracker;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.*;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,38 +23,43 @@ public class StatsController {
     @Value("${football.api.key}")
     private String apiKey;
 
+    @Autowired
+    private AppConfigService appConfigService;
+
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    private Map<String, Object> cachedStats = null;
-    private LocalDateTime cacheTimestamp = null;
-    private static final int CACHE_HOURS = 24;
-
     @GetMapping
     public Map<String, Object> getStats() {
-        if (isCacheValid()) {
-            return cachedStats;
+        String cached = appConfigService.get("stats_cache", "");
+        if (!cached.isEmpty()) {
+            try {
+                return objectMapper.readValue(cached,
+                        objectMapper.getTypeFactory().constructMapType(
+                                HashMap.class, String.class, Object.class));
+            } catch (Exception e) {
+                System.err.println("Failed to parse cached stats: " + e.getMessage());
+            }
         }
-        return refreshCache();
+        return refreshStats();
     }
 
     @PostMapping("/refresh")
     public Map<String, Object> forceRefresh() {
-        return refreshCache();
+        return refreshStats();
+    }
+
+    @Scheduled(cron = "0 0 2 * * *")
+    public void scheduledRefresh() {
+        System.out.println("Scheduled stats refresh starting...");
+        refreshStats();
     }
 
     public void invalidateCache() {
-        cachedStats = null;
-        cacheTimestamp = null;
+        appConfigService.set("stats_cache", "");
     }
 
-    private boolean isCacheValid() {
-        return cachedStats != null
-                && cacheTimestamp != null
-                && cacheTimestamp.plusHours(CACHE_HOURS).isAfter(LocalDateTime.now());
-    }
-
-    private Map<String, Object> refreshCache() {
+    public Map<String, Object> refreshStats() {
         try {
             String season = fetchBestSeason();
             JsonNode root = fetchStandings(season);
@@ -75,17 +75,24 @@ public class StatsController {
             result.put("home", home);
             result.put("away", away);
 
-            cachedStats = result;
-            cacheTimestamp = LocalDateTime.now();
-            System.out.println("Stats cache refreshed at " + cacheTimestamp);
-            return cachedStats;
+            String json = objectMapper.writeValueAsString(result);
+            appConfigService.set("stats_cache", json);
+            System.out.println("Stats refreshed and stored in DB.");
+            return result;
 
         } catch (Exception e) {
-            if (cachedStats != null) {
-                System.err.println("Stats refresh failed, serving stale cache: " + e.getMessage());
-                return cachedStats;
+            System.err.println("Stats refresh failed: " + e.getMessage());
+            String cached = appConfigService.get("stats_cache", "");
+            if (!cached.isEmpty()) {
+                try {
+                    return objectMapper.readValue(cached,
+                            objectMapper.getTypeFactory().constructMapType(
+                                    HashMap.class, String.class, Object.class));
+                } catch (Exception ex) {
+                    throw new RuntimeException("Stats unavailable");
+                }
             }
-            throw new RuntimeException("Failed to fetch stats: " + e.getMessage());
+            throw new RuntimeException("Stats unavailable: " + e.getMessage());
         }
     }
 

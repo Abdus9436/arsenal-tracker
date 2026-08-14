@@ -40,6 +40,7 @@ public class AppConfigService {
             appConfigRepository.save(new AppConfig("app_announcement", "", "Banner message shown to all users (empty = no banner)"));
             appConfigRepository.save(new AppConfig("fixture_api_url", "https://api.football-data.org/v4/teams/57/matches?season=", "Base URL for fixture sync API"));
             appConfigRepository.save(new AppConfig("max_users", "50", "Maximum number of registered users allowed"));
+            appConfigRepository.save(new AppConfig("stats_cache", "", "Cached stats JSON from football API - updated daily at 2am"));
         }
     }
 }

@@ -1248,6 +1248,17 @@ function AdminPage() {
     })
     const [playerMessage, setPlayerMessage] = useState('')
     const [showAddForm, setShowAddForm] = useState(false)
+    const [userSearch, setUserSearch] = useState('')
+    const [playerSearch, setPlayerSearch] = useState('')
+    const filteredUsers = users.filter(u =>
+        u.displayName?.toLowerCase().includes(userSearch.toLowerCase()) ||
+        u.email.toLowerCase().includes(userSearch.toLowerCase())
+    )
+
+    const filteredPlayers = players.filter(p =>
+        p.name?.toLowerCase().includes(playerSearch.toLowerCase()) ||
+        p.position?.toLowerCase().includes(playerSearch.toLowerCase())
+    )
 
     useEffect(() => {
         loadConfigs()
@@ -1504,7 +1515,13 @@ function AdminPage() {
             <section>
                 <h2 style={styles.sectionTitle}>👥 User Management</h2>
                 {userMessage && <p style={{ color: '#66cc66', fontSize: '0.9rem', marginBottom: '12px' }}>{userMessage}</p>}
-                <div style={styles.tableWrapper}>
+                <input
+                        style={{ ...styles.input, marginBottom: '12px' }}
+                        placeholder="Search by username or email..."
+                        value={userSearch}
+                        onChange={e => setUserSearch(e.target.value)}
+                    />
+                <div style={styles.scrollableTable}>
                 <table style={styles.table}>
                     <thead>
                         <tr>
@@ -1571,12 +1588,20 @@ function AdminPage() {
                 <h2 style={styles.sectionTitle}>👥 Squad Management</h2>
                 {playerMessage && <p style={{ color: '#66cc66', fontSize: '0.9rem', marginBottom: '12px' }}>{playerMessage}</p>}
 
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <input
+                            style={{ ...styles.input, maxWidth: '300px' }}
+                            placeholder="Search by name or position..."
+                            value={playerSearch}
+                            onChange={e => setPlayerSearch(e.target.value)}
+                        />
                 <button
                     style={{ ...styles.primaryButton, marginBottom: '16px' }}
                     onClick={() => setShowAddForm(!showAddForm)}
                 >
                     {showAddForm ? 'Cancel' : '+ Add Player'}
                 </button>
+                </div>
 
                 {showAddForm && (
                     <div style={{ ...styles.form, marginBottom: '24px' }}>
@@ -1596,7 +1621,7 @@ function AdminPage() {
                     </div>
                 )}
 
-                <div style={styles.tableWrapper}>
+                <div style={styles.scrollableTable}>
                 <table style={styles.table}>
                     <thead>
                         <tr>
@@ -1610,7 +1635,7 @@ function AdminPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        {players.map(player => (
+                        {filteredPlayers.map(player => (
                             <tr key={player.id}>
                                 {editingPlayer?.id === player.id ? (
                                     <>
@@ -1779,7 +1804,7 @@ function AnnouncementBanner() {
 
 function MainApp({ onLogout, isAdmin }) {
     return (
-        <BrowserRouter basename="/arsenal-tracker">
+        <BrowserRouter basename="/">
             <AppHeader onLogout={onLogout} isAdmin={isAdmin} />
             <AnnouncementBanner />
             <Routes>
@@ -2351,5 +2376,12 @@ const styles = {
     tableWrapper: {
         overflowX: 'auto',
         width: '100%',
+    },
+    scrollableTable: {
+        maxHeight: '320px',
+        overflowY: 'auto',
+        overflowX: 'auto',
+        border: '1px solid #2a2a2a',
+        borderRadius: '6px',
     },
 }
