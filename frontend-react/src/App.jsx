@@ -494,7 +494,15 @@ function FixturesPage() {
                             {fixture.matchDate} | {fixture.venue}
                         </span>
                         <span style={styles.cardDetail}>
-                            Kickoff: {fixture.matchTime ? fixture.matchTime.substring(0, 5) + ' UTC' : 'TBC'}
+                            Kickoff: {fixture.matchTime && fixture.matchDate ? (() => {
+                                const utcString = `${fixture.matchDate}T${fixture.matchTime}Z`
+                                const localTime = new Date(utcString).toLocaleTimeString([], {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    timeZoneName: 'short'
+                                })
+                                return localTime
+                            })() : 'TBC'}
                         </span>
                         {fixture.isKnockout && (
                             <span style={{ ...styles.cardDetail, color: '#db0007' }}>
