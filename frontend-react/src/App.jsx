@@ -1522,7 +1522,7 @@ function AdminPage() {
                         onChange={e => setUserSearch(e.target.value)}
                     />
                 <div style={styles.scrollableTable}>
-                <table style={styles.table}>
+                <table style={{ ...styles.table, minWidth: '600px' }}>
                     <thead>
                         <tr>
                             <th style={styles.th}>Username</th>
@@ -1622,7 +1622,7 @@ function AdminPage() {
                 )}
 
                 <div style={styles.scrollableTable}>
-                <table style={styles.table}>
+                <table style={{ ...styles.table, minWidth: '600px' }}>
                     <thead>
                         <tr>
                             <th style={styles.th}>Photo</th>
@@ -2383,5 +2383,6 @@ const styles = {
         overflowX: 'auto',
         border: '1px solid #2a2a2a',
         borderRadius: '6px',
+        width: '100%',
     },
 }
