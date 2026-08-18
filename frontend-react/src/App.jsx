@@ -19,6 +19,10 @@ function LoginPage({ onLoginSuccess }) {
     const [showPassword, setShowPassword] = useState(false)
     const [error, setError] = useState('')
     const [success, setSuccess] = useState('')
+    const [showForgotPassword, setShowForgotPassword] = useState(false)
+    const [forgotEmail, setForgotEmail] = useState('')
+    const [forgotMessage, setForgotMessage] = useState('')
+    const [forgotLoading, setForgotLoading] = useState(false)
 
     async function handleLogin() {
         const response = await fetch(`${API_BASE}/auth/login`, {
@@ -84,6 +88,22 @@ function LoginPage({ onLoginSuccess }) {
         setPassword('')
         setDisplayName('')
         setShowPassword(false)
+    }
+
+    async function handleForgotPassword() {
+        if (!forgotEmail) {
+            setForgotMessage('Please enter your email.')
+            return
+        }
+        setForgotLoading(true)
+        const response = await fetch(`${API_BASE}/auth/forgot-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: forgotEmail })
+        })
+        const data = await response.json()
+        setForgotLoading(false)
+        setForgotMessage(data.message)
     }
 
     return (
@@ -157,6 +177,45 @@ function LoginPage({ onLoginSuccess }) {
                     >
                         {isRegistering ? 'Create Account' : 'Login'}
                     </button>
+
+                    {!isRegistering && !showForgotPassword && (
+                        <span
+                            onClick={() => { setShowForgotPassword(true); setError('') }}
+                            style={{ color: '#aaaaaa', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline' }}
+                        >
+                            Forgot password?
+                        </span>
+                    )}
+
+                    {showForgotPassword && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid #2a2a2a', paddingTop: '16px' }}>
+                            <p style={styles.cardDetail}>Enter your email to receive a reset link:</p>
+                            <input
+                                style={styles.input}
+                                type="email"
+                                placeholder="Your email address"
+                                value={forgotEmail}
+                                onChange={e => setForgotEmail(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && handleForgotPassword()}
+                            />
+                            <button
+                                style={styles.primaryButton}
+                                onClick={handleForgotPassword}
+                                disabled={forgotLoading}
+                            >
+                                {forgotLoading ? 'Sending...' : 'Send Reset Link'}
+                            </button>
+                            {forgotMessage && (
+                                <p style={{ ...styles.cardDetail, color: '#66cc66' }}>{forgotMessage}</p>
+                            )}
+                            <span
+                                onClick={() => { setShowForgotPassword(false); setForgotMessage(''); setForgotEmail('') }}
+                                style={{ color: '#aaaaaa', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline' }}
+                            >
+                                Back to login
+                            </span>
+                        </div>
+                    )}
 
                     {error && <p style={styles.errorText}>{error}</p>}
                     {success && <p style={{ ...styles.errorText, color: '#66cc66' }}>{success}</p>}
@@ -1829,9 +1888,116 @@ function MainApp({ onLogout, isAdmin }) {
     )
 }
 
+function ResetPasswordPage() {
+    const [password, setPassword] = useState('')
+    const [confirmPassword, setConfirmPassword] = useState('')
+    const [showPassword, setShowPassword] = useState(false)
+    const [message, setMessage] = useState('')
+    const [error, setError] = useState('')
+    const [loading, setLoading] = useState(false)
+    const [success, setSuccess] = useState(false)
+
+    const token = new URLSearchParams(window.location.search).get('token')
+
+    async function handleReset() {
+        if (!token) {
+            setError('Invalid reset link.')
+            return
+        }
+        if (password.length < 6) {
+            setError('Password must be at least 6 characters.')
+            return
+        }
+        if (password !== confirmPassword) {
+            setError('Passwords do not match.')
+            return
+        }
+
+        setLoading(true)
+        const response = await fetch(`${API_BASE}/auth/reset-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, password })
+        })
+
+        const data = await response.json()
+        setLoading(false)
+
+        if (response.ok) {
+            setSuccess(true)
+            setMessage(data.message)
+        } else {
+            setError(data.error || 'Something went wrong.')
+        }
+    }
+
+    return (
+        <>
+            <header style={styles.header}>
+                <div style={styles.headerLeft}>
+                    <h1 style={styles.headerTitle}>⚽ Arsenal Tracker</h1>
+                    <p style={styles.headerSubtitle}>Predict the scores. Earn the points.</p>
+                </div>
+            </header>
+            <div style={styles.loginWrapper}>
+                <div style={styles.loginBox}>
+                    <h2 style={styles.sectionTitle}>Reset Password</h2>
+
+                    {success ? (
+                        <>
+                            <p style={{ ...styles.errorText, color: '#66cc66' }}>{message}</p>
+                            <a href="/" style={{ color: '#db0007', fontSize: '0.9rem' }}>
+                                Back to login
+                            </a>
+                        </>
+                    ) : (
+                        <>
+                            <div style={styles.passwordWrapper}>
+                                <input
+                                    style={{ ...styles.input, width: '100%', paddingRight: '40px' }}
+                                    type={showPassword ? 'text' : 'password'}
+                                    placeholder="New password (min 6 characters)"
+                                    value={password}
+                                    onChange={e => setPassword(e.target.value)}
+                                />
+                                <button
+                                    style={styles.eyeButton}
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    type="button"
+                                >
+                                    {showPassword ? '🙈' : '👁'}
+                                </button>
+                            </div>
+                            <input
+                                style={styles.input}
+                                type="password"
+                                placeholder="Confirm new password"
+                                value={confirmPassword}
+                                onChange={e => setConfirmPassword(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && handleReset()}
+                            />
+                            <button
+                                style={styles.primaryButton}
+                                onClick={handleReset}
+                                disabled={loading}
+                            >
+                                {loading ? 'Resetting...' : 'Reset Password'}
+                            </button>
+                            {error && <p style={styles.errorText}>{error}</p>}
+                        </>
+                    )}
+                </div>
+            </div>
+        </>
+    )
+}
+
 export default function App() {
     const [isLoggedIn, setIsLoggedIn] = useState(!!getToken())
     const [isAdmin, setIsAdmin] = useState(false)
+
+    const isResetPage = window.location.pathname.includes('reset-password') ||
+                        window.location.search.includes('token=')
 
     useEffect(() => {
         if (isLoggedIn) {
@@ -1857,6 +2023,10 @@ export default function App() {
         localStorage.removeItem('token')
         setIsLoggedIn(false)
         setIsAdmin(false)
+    }
+
+    if (isResetPage) {
+        return <ResetPasswordPage />
     }
 
     if (!isLoggedIn) {
